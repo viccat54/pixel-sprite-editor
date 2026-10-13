@@ -1,0 +1,1022 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <title>PixelSprite Touch 128</title>
+  <style>
+    :root {
+      --bg-dark: #16181d;
+      --panel-bg: #22252d;
+      --border: #343946;
+      --accent: #3b82f6;
+      --accent-active: #2563eb;
+      --text: #f3f4f6;
+      --text-sub: #9ca3af;
+    }
+    * {
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    body {
+      margin: 0;
+      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
+      background: var(--bg-dark);
+      color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
+      height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      gap: 6px;
+      z-index: 10;
+    }
+    .btn {
+      background: #2f3441;
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 7px 11px;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+    }
+    .btn:active { background: #3f4656; }
+    .btn.primary { background: var(--accent); border-color: var(--accent); }
+    .btn.primary:active { background: var(--accent-active); }
+    .btn:disabled { opacity: 0.4; pointer-events: none; }
+
+    /* Collapsible Convert Settings Drawer */
+    #convertDrawer {
+      background: var(--panel-bg);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 12px;
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9;
+    }
+    #convertDrawer.open { display: flex; }
+    .setting-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 13px;
+      gap: 8px;
+    }
+    select, input[type="range"] {
+      background: #16181d;
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+
+    /* Main Canvas Viewport */
+    #viewport {
+      flex: 1;
+      position: relative;
+      overflow: hidden;
+      background: #111317;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      touch-action: none;
+    }
+    #canvasWrapper {
+      position: relative;
+      transform-origin: center center;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
+      /* Checkerboard for transparency */
+      background-image:
+        linear-gradient(45deg, #2a2d35 25%, transparent 25%),
+        linear-gradient(-45deg, #2a2d35 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, #2a2d35 75%),
+        linear-gradient(-45deg, transparent 75%, #2a2d35 75%);
+      background-size: 16px 16px;
+      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
+      background-color: #1d1f26;
+    }
+    #spriteCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    #gridOverlay {
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      display: none;
+    }
+    #gridOverlay.visible { display: block; }
+
+    /* Floating Status Badge */
+    #statusBadge {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      background: rgba(22, 24, 29, 0.8);
+      backdrop-filter: blur(4px);
+      padding: 4px 8px;
+      border-radius: 6px;
+      font-size: 11px;
+      color: var(--text-sub);
+      pointer-events: none;
+      border: 1px solid var(--border);
+    }
+
+    /* Bottom Controls Area */
+    #bottomPanel {
+      background: var(--panel-bg);
+      border-top: 1px solid var(--border);
+      padding: 8px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      z-index: 10;
+    }
+
+    /* Palette Bar */
+    .palette-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    #colorPickerWrap {
+      position: relative;
+      width: 34px;
+      height: 34px;
+      border-radius: 8px;
+      border: 2px solid #fff;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    #colorPicker {
+      position: absolute;
+      inset: -8px;
+      width: 50px;
+      height: 50px;
+      border: none;
+      padding: 0;
+      background: none;
+    }
+    #paletteSwatches {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+      scrollbar-width: none;
+    }
+    #paletteSwatches::-webkit-scrollbar { display: none; }
+    .swatch {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      border: 1.5px solid var(--border);
+      flex-shrink: 0;
+    }
+    .swatch.active {
+      border-color: #fff;
+      transform: scale(1.1);
+    }
+
+    /* Tool Buttons */
+    .tools-grid {
+      display: grid;
+      grid-template-columns: repeat(6, 1fr);
+      gap: 6px;
+    }
+    .tool-btn {
+      background: #2b303c;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 8px 4px;
+      border-radius: 8px;
+      font-size: 11px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+    }
+    .tool-btn span.icon { font-size: 16px; }
+    .tool-btn.active {
+      background: var(--accent);
+      border-color: #60a5fa;
+    }
+
+    /* Brush & Zoom Sub-bar */
+    .sub-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-sub);
+      gap: 8px;
+    }
+    .size-group {
+      display: flex;
+      gap: 4px;
+    }
+    .size-btn {
+      background: #2b303c;
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 4px 9px;
+      border-radius: 6px;
+      font-size: 12px;
+    }
+    .size-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+    }
+
+    /* Export Modal for iPhone Long-Press Save */
+    #exportModal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.82);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 20px;
+    }
+    #exportModal.open { display: flex; }
+    .modal-card {
+      background: var(--panel-bg);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      padding: 16px;
+      max-width: 340px;
+      width: 100%;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .modal-card img {
+      width: 192px;
+      height: 192px;
+      margin: 0 auto;
+      image-rendering: pixelated;
+      border: 1px solid var(--border);
+      background: #16181d;
+    }
+    .modal-hint {
+      font-size: 12px;
+      color: var(--text-sub);
+      line-height: 1.4;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Header -->
+  <header>
+    <div style="display:flex; gap:6px;">
+      <label class="btn primary">
+        📁 画像読込
+        <input type="file" id="fileInput" accept="image/*" style="display:none;">
+      </label>
+      <button class="btn" id="toggleConvertBtn">⚙️ 変換設定</button>
+    </div>
+    <div style="display:flex; gap:6px;">
+      <button class="btn" id="undoBtn" disabled>↩️</button>
+      <button class="btn" id="redoBtn" disabled>↪️</button>
+      <button class="btn primary" id="exportBtn">💾 保存</button>
+    </div>
+  </header>
+
+  <!-- Collapsible Conversion Settings -->
+  <div id="convertDrawer">
+    <div class="setting-row">
+      <span>解像度 (サイズ)</span>
+      <select id="resSelect">
+        <option value="32">32 × 32</option>
+        <option value="64">64 × 64</option>
+        <option value="96">96 × 96</option>
+        <option value="128" selected>128 × 128</option>
+        <option value="160">160 × 160</option>
+        <option value="256">256 × 256</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <span>色数制限 (減色)</span>
+      <select id="paletteLimitSelect">
+        <option value="0">制限なし (フルカラー)</option>
+        <option value="64">64色</option>
+        <option value="32" selected>32色 (レトロ風)</option>
+        <option value="16">16色 (SFC/MD風)</option>
+        <option value="8">8色 (GB/FC風)</option>
+      </select>
+    </div>
+    <div class="setting-row">
+      <span>縮小アルゴリズム</span>
+      <select id="sampleModeSelect">
+        <option value="pixelated" selected>ニアレスト (ドット感重視)</option>
+        <option value="smooth">バイリニア (なめらか縮小)</option>
+      </select>
+    </div>
+    <div style="display:flex; gap:8px;">
+      <button class="btn primary" id="reconvertBtn" style="flex:1;">🔄 設定を反映して再変換</button>
+      <button class="btn" id="clearCanvasBtn">🗑️ 白紙</button>
+    </div>
+  </div>
+
+  <!-- Main Interactive Viewport -->
+  <div id="viewport">
+    <div id="canvasWrapper">
+      <canvas id="spriteCanvas" width="128" height="128"></canvas>
+      <canvas id="gridOverlay"></canvas>
+    </div>
+    <div id="statusBadge">128×128 | 100% | 2本指で拡大移動</div>
+  </div>
+
+  <!-- Bottom Editing Controls -->
+  <div id="bottomPanel">
+    <!-- Color Picker & Extracted Palette -->
+    <div class="palette-row">
+      <div id="colorPickerWrap">
+        <input type="color" id="colorPicker" value="#ff4757">
+      </div>
+      <div id="paletteSwatches"></div>
+    </div>
+
+    <!-- Brush Size, Grid & Zoom Reset -->
+    <div class="sub-bar">
+      <div class="size-group">
+        <button class="size-btn active" data-size="1">1px</button>
+        <button class="size-btn" data-size="2">2px</button>
+        <button class="size-btn" data-size="3">3px</button>
+        <button class="size-btn" data-size="5">5px</button>
+      </div>
+      <div style="display:flex; gap:6px;">
+        <button class="size-btn" id="gridToggleBtn">グリッド</button>
+        <button class="size-btn" id="resetViewBtn">表示リセット</button>
+      </div>
+    </div>
+
+    <!-- Tool Selection Bar -->
+    <div class="tools-grid">
+      <button class="tool-btn active" data-tool="pen">
+        <span class="icon">✏️</span><span>ペン</span>
+      </button>
+      <button class="tool-btn" data-tool="eraser">
+        <span class="icon">🧹</span><span>消しゴム</span>
+      </button>
+      <button class="tool-btn" data-tool="eyedropper">
+        <span class="icon">💧</span><span>スポイト</span>
+      </button>
+      <button class="tool-btn" data-tool="bucket">
+        <span class="icon">🪣</span><span>バケツ</span>
+      </button>
+      <button class="tool-btn" data-tool="magicErase">
+        <span class="icon">✨</span><span>背景透過</span>
+      </button>
+      <button class="tool-btn" data-tool="pan">
+        <span class="icon">✋</span><span>移動/拡大</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div id="exportModal">
+    <div class="modal-card">
+      <div style="font-weight:700; font-size:15px;">スプライト画像の保存</div>
+      <img id="exportPreviewImg" alt="Sprite Preview">
+      <div class="modal-hint">
+        📱 <b>iPhoneの写真に保存する場合:</b><br>
+        上のプレビュー画像を<b>長押し</b>して「"写真"に保存」を選択してください。
+      </div>
+      <div style="display:flex; gap:8px;">
+        <button class="btn" id="download1xBtn" style="flex:1;">等倍PNG (ゲーム用)</button>
+        <button class="btn primary" id="download4xBtn" style="flex:1;">拡大PNG (SNS/閲覧用)</button>
+      </div>
+      <button class="btn" id="closeModalBtn">閉じる</button>
+    </div>
+  </div>
+
+  <script>
+    const spriteCanvas = document.getElementById('spriteCanvas');
+    const ctx = spriteCanvas.getContext('2d', { willReadFrequently: true });
+    const gridOverlay = document.getElementById('gridOverlay');
+    const gridCtx = gridOverlay.getContext('2d');
+    const canvasWrapper = document.getElementById('canvasWrapper');
+    const viewport = document.getElementById('viewport');
+    const statusBadge = document.getElementById('statusBadge');
+
+    // State
+    let spriteSize = 128;
+    let currentTool = 'pen';
+    let currentColor = '#ff4757';
+    let brushSize = 1;
+    let showGrid = false;
+    let sourceImage = null;
+
+    // Viewport Transform (Pan & Zoom)
+    let scale = 1;
+    let panX = 0;
+    let panY = 0;
+    let baseDisplaySize = 300;
+
+    // Undo / Redo Stacks
+    const MAX_HISTORY = 30;
+    let undoStack = [];
+    let redoStack = [];
+
+    // Initialize workspace
+    function initCanvas(size, clear = true) {
+      spriteSize = size;
+      spriteCanvas.width = size;
+      spriteCanvas.height = size;
+
+      const vw = viewport.clientWidth || 360;
+      const vh = viewport.clientHeight || 420;
+      baseDisplaySize = Math.min(vw, vh) * 0.88;
+      canvasWrapper.style.width = `${baseDisplaySize}px`;
+      canvasWrapper.style.height = `${baseDisplaySize}px`;
+
+      if (clear) {
+        ctx.clearRect(0, 0, size, size);
+        drawSamplePlaceholder();
+      }
+      drawGridOverlay();
+      resetView();
+      saveHistory(true);
+      extractPaletteFromCanvas();
+    }
+
+    // Initial sample pixel art so the user can test immediately
+    function drawSamplePlaceholder() {
+      ctx.clearRect(0, 0, spriteSize, spriteSize);
+      const cx = Math.floor(spriteSize / 2);
+      const cy = Math.floor(spriteSize / 2);
+      const r = Math.floor(spriteSize * 0.28);
+      for (let y = cy - r; y <= cy + r; y++) {
+        for (let x = cx - r; x <= cx + r; x++) {
+          const dist = Math.hypot(x - cx, y - cy);
+          if (dist < r && dist >= r - 2) {
+            ctx.fillStyle = '#1e293b';
+            ctx.fillRect(x, y, 1, 1);
+          } else if (dist < r - 2) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? '#3b82f6' : '#60a5fa';
+            ctx.fillRect(x, y, 1, 1);
+          }
+        }
+      }
+    }
+
+    // Draw crisp grid lines on overlay canvas
+    function drawGridOverlay() {
+      const dpr = window.devicePixelRatio || 2;
+      gridOverlay.width = baseDisplaySize * dpr;
+      gridOverlay.height = baseDisplaySize * dpr;
+      gridCtx.clearRect(0, 0, gridOverlay.width, gridOverlay.height);
+
+      const step = gridOverlay.width / spriteSize;
+      if (step < 3) return; // Hide if too dense
+
+      gridCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+      gridCtx.lineWidth = 1;
+      gridCtx.beginPath();
+      for (let i = 1; i < spriteSize; i++) {
+        const pos = Math.floor(i * step) + 0.5;
+        gridCtx.moveTo(pos, 0);
+        gridCtx.lineTo(pos, gridOverlay.height);
+        gridCtx.moveTo(0, pos);
+        gridCtx.lineTo(gridOverlay.width, pos);
+      }
+      gridCtx.stroke();
+    }
+
+    function updateTransform() {
+      canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
+      statusBadge.textContent = `${spriteSize}×${spriteSize} | ${Math.round(scale * 100)}%`;
+    }
+
+    function resetView() {
+      scale = 1;
+      panX = 0;
+      panY = 0;
+      updateTransform();
+    }
+
+    // History management
+    function saveHistory(resetRedo = true) {
+      const data = ctx.getImageData(0, 0, spriteSize, spriteSize);
+      undoStack.push(data);
+      if (undoStack.length > MAX_HISTORY) undoStack.shift();
+      if (resetRedo) redoStack = [];
+      updateHistoryButtons();
+    }
+
+    function undo() {
+      if (undoStack.length <= 1) return;
+      const current = undoStack.pop();
+      redoStack.push(current);
+      const prev = undoStack[undoStack.length - 1];
+      ctx.putImageData(prev, 0, 0);
+      updateHistoryButtons();
+    }
+
+    function redo() {
+      if (redoStack.length === 0) return;
+      const next = redoStack.pop();
+      undoStack.push(next);
+      ctx.putImageData(next, 0, 0);
+      updateHistoryButtons();
+    }
+
+    function updateHistoryButtons() {
+      document.getElementById('undoBtn').disabled = undoStack.length <= 1;
+      document.getElementById('redoBtn').disabled = redoStack.length === 0;
+    }
+
+    // High-Res Image to Low-Res Pixel Sprite Conversion
+    function convertImageToSprite() {
+      if (!sourceImage) return;
+      const targetSize = parseInt(document.getElementById('resSelect').value, 10);
+      const colorLimit = parseInt(document.getElementById('paletteLimitSelect').value, 10);
+      const sampleMode = document.getElementById('sampleModeSelect').value;
+
+      if (targetSize !== spriteSize) {
+        spriteSize = targetSize;
+        spriteCanvas.width = spriteSize;
+        spriteCanvas.height = spriteSize;
+        drawGridOverlay();
+      }
+
+      ctx.clearRect(0, 0, spriteSize, spriteSize);
+      ctx.imageSmoothingEnabled = (sampleMode === 'smooth');
+      ctx.imageSmoothingQuality = 'medium';
+
+      // Fit aspect ratio (Contain)
+      const iw = sourceImage.width;
+      const ih = sourceImage.height;
+      const ratio = Math.min(spriteSize / iw, spriteSize / ih);
+      const nw = Math.round(iw * ratio);
+      const nh = Math.round(ih * ratio);
+      const ox = Math.floor((spriteSize - nw) / 2);
+      const oy = Math.floor((spriteSize - nh) / 2);
+
+      ctx.drawImage(sourceImage, ox, oy, nw, nh);
+
+      // Quantize colors & clean alpha
+      const imgData = ctx.getImageData(0, 0, spriteSize, spriteSize);
+      const data = imgData.data;
+
+      if (colorLimit > 0) {
+        // Uniform / clustered quantization for crisp retro palette
+        const levels = Math.max(2, Math.round(Math.cbrt(colorLimit)));
+        const step = 255 / (levels - 1);
+        for (let i = 0; i < data.length; i += 4) {
+          if (data[i + 3] < 128) {
+            data[i + 3] = 0; // Crisp transparent cutoff
+          } else {
+            data[i]     = Math.round(Math.round(data[i] / step) * step);
+            data[i + 1] = Math.round(Math.round(data[i + 1] / step) * step);
+            data[i + 2] = Math.round(Math.round(data[i + 2] / step) * step);
+            data[i + 3] = 255;
+          }
+        }
+      } else {
+        for (let i = 0; i < data.length; i += 4) {
+          data[i + 3] = data[i + 3] < 128 ? 0 : 255;
+        }
+      }
+
+      ctx.putImageData(imgData, 0, 0);
+      saveHistory(true);
+      extractPaletteFromCanvas();
+      updateTransform();
+    }
+
+    // Extract frequent colors from the sprite into the swatch bar
+    function extractPaletteFromCanvas() {
+      const data = ctx.getImageData(0, 0, spriteSize, spriteSize).data;
+      const counts = new Map();
+      for (let i = 0; i < data.length; i += 4) {
+        if (data[i + 3] < 128) continue;
+        const hex = rgbToHex(data[i], data[i + 1], data[i + 2]);
+        counts.set(hex, (counts.get(hex) || 0) + 1);
+      }
+      const sorted = [...counts.entries()]
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 24)
+        .map(e => e[0]);
+
+      if (sorted.length === 0) {
+        sorted.push('#ff4757', '#ffa502', '#2ed573', '#1e90ff', '#ffffff', '#000000');
+      }
+
+      const container = document.getElementById('paletteSwatches');
+      container.innerHTML = '';
+      sorted.forEach(hex => {
+        const div = document.createElement('div');
+        div.className = 'swatch' + (hex.toLowerCase() === currentColor.toLowerCase() ? ' active' : '');
+        div.style.backgroundColor = hex;
+        div.addEventListener('click', () => selectColor(hex));
+        container.appendChild(div);
+      });
+    }
+
+    function selectColor(hex) {
+      currentColor = hex;
+      document.getElementById('colorPicker').value = hex;
+      document.getElementById('colorPickerWrap').style.backgroundColor = hex;
+      document.querySelectorAll('.swatch').forEach(el => {
+        el.classList.toggle('active', rgbStringToHex(el.style.backgroundColor) === hex.toLowerCase());
+      });
+      if (currentTool === 'eraser' || currentTool === 'eyedropper' || currentTool === 'pan') {
+        setTool('pen');
+      }
+    }
+
+    function rgbToHex(r, g, b) {
+      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
+    }
+
+    function rgbStringToHex(rgb) {
+      const m = rgb.match(/\d+/g);
+      if (!m) return '';
+      return rgbToHex(+m[0], +m[1], +m[2]).toLowerCase();
+    }
+
+    function hexToRgba(hex) {
+      const n = parseInt(hex.slice(1), 16);
+      return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
+    }
+
+    // Map touch/mouse coordinates accurately to pixel grid
+    function getPixelCoords(clientX, clientY) {
+      const rect = spriteCanvas.getBoundingClientRect();
+      const x = Math.floor(((clientX - rect.left) / rect.width) * spriteSize);
+      const y = Math.floor(((clientY - rect.top) / rect.height) * spriteSize);
+      return { x, y };
+    }
+
+    // Draw a single pixel or brush square
+    function plotPixel(x, y) {
+      if (x < 0 || y < 0 || x >= spriteSize || y >= spriteSize) return;
+      const offset = Math.floor((brushSize - 1) / 2);
+      if (currentTool === 'eraser') {
+        ctx.clearRect(x - offset, y - offset, brushSize, brushSize);
+      } else if (currentTool === 'pen') {
+        ctx.fillStyle = currentColor;
+        ctx.fillRect(x - offset, y - offset, brushSize, brushSize);
+      }
+    }
+
+    // Bresenham line algorithm for smooth stroke on fast finger movement
+    function drawLine(x0, y0, x1, y1) {
+      const dx = Math.abs(x1 - x0);
+      const dy = Math.abs(y1 - y0);
+      const sx = (x0 < x1) ? 1 : -1;
+      const sy = (y0 < y1) ? 1 : -1;
+      let err = dx - dy;
+
+      while (true) {
+        plotPixel(x0, y0);
+        if (x0 === x1 && y0 === y1) break;
+        const e2 = 2 * err;
+        if (e2 > -dy) { err -= dy; x0 += sx; }
+        if (e2 < dx)  { err += dx; y0 += sy; }
+      }
+    }
+
+    // Flood Fill (Bucket fill or Magic Background Eraser)
+    function floodFill(startX, startY, fillRgba, tolerance = 0) {
+      if (startX < 0 || startY < 0 || startX >= spriteSize || startY >= spriteSize) return;
+      const imgData = ctx.getImageData(0, 0, spriteSize, spriteSize);
+      const data = imgData.data;
+      const startIdx = (startY * spriteSize + startX) * 4;
+      const targetR = data[startIdx];
+      const targetG = data[startIdx + 1];
+      const targetB = data[startIdx + 2];
+      const targetA = data[startIdx + 3];
+
+      if (
+        targetR === fillRgba[0] &&
+        targetG === fillRgba[1] &&
+        targetB === fillRgba[2] &&
+        targetA === fillRgba[3]
+      ) return;
+
+      const visited = new Uint8Array(spriteSize * spriteSize);
+      const stack = [[startX, startY]];
+
+      while (stack.length > 0) {
+        const [x, y] = stack.pop();
+        if (x < 0 || y < 0 || x >= spriteSize || y >= spriteSize) continue;
+        const pIdx = y * spriteSize + x;
+        if (visited[pIdx]) continue;
+
+        const i = pIdx * 4;
+        const diff = Math.abs(data[i] - targetR) +
+                     Math.abs(data[i + 1] - targetG) +
+                     Math.abs(data[i + 2] - targetB) +
+                     Math.abs(data[i + 3] - targetA);
+
+        if (diff <= tolerance) {
+          visited[pIdx] = 1;
+          data[i]     = fillRgba[0];
+          data[i + 1] = fillRgba[1];
+          data[i + 2] = fillRgba[2];
+          data[i + 3] = fillRgba[3];
+          stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
+        }
+      }
+      ctx.putImageData(imgData, 0, 0);
+    }
+
+    // Touch & Pointer Handling (Supports 1-finger draw + 2-finger pinch zoom/pan)
+    let isDrawing = false;
+    let lastPt = null;
+    let isPinching = false;
+    let pinchStartDist = 0;
+    let pinchStartScale = 1;
+    let pinchStartCenter = { x: 0, y: 0 };
+    let panStartOffset = { x: 0, y: 0 };
+
+    viewport.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 2) {
+        // Switch immediately to 2-finger pinch/pan
+        isDrawing = false;
+        isPinching = true;
+        pinchStartDist = getTouchDist(e.touches[0], e.touches[1]);
+        pinchStartScale = scale;
+        pinchStartCenter = getTouchCenter(e.touches[0], e.touches[1]);
+        panStartOffset = { x: panX, y: panY };
+        return;
+      }
+
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        if (currentTool === 'pan') {
+          isPinching = true;
+          pinchStartCenter = { x: t.clientX, y: t.clientY };
+          panStartOffset = { x: panX, y: panY };
+          return;
+        }
+
+        const pt = getPixelCoords(t.clientX, t.clientY);
+        handleSinglePointAction(pt.x, pt.y);
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (e.touches.length === 2 && isPinching) {
+        const dist = getTouchDist(e.touches[0], e.touches[1]);
+        const center = getTouchCenter(e.touches[0], e.touches[1]);
+        scale = Math.min(12, Math.max(0.7, pinchStartScale * (dist / pinchStartDist)));
+        panX = panStartOffset.x + (center.x - pinchStartCenter.x);
+        panY = panStartOffset.y + (center.y - pinchStartCenter.y);
+        updateTransform();
+        return;
+      }
+
+      if (e.touches.length === 1) {
+        const t = e.touches[0];
+        if (currentTool === 'pan' && isPinching) {
+          panX = panStartOffset.x + (t.clientX - pinchStartCenter.x);
+          panY = panStartOffset.y + (t.clientY - pinchStartCenter.y);
+          updateTransform();
+          return;
+        }
+
+        if (isDrawing && (currentTool === 'pen' || currentTool === 'eraser')) {
+          const pt = getPixelCoords(t.clientX, t.clientY);
+          if (lastPt) {
+            drawLine(lastPt.x, lastPt.y, pt.x, pt.y);
+          } else {
+            plotPixel(pt.x, pt.y);
+          }
+          lastPt = pt;
+        }
+      }
+    }, { passive: false });
+
+    viewport.addEventListener('touchend', (e) => {
+      if (isDrawing) {
+        isDrawing = false;
+        lastPt = null;
+        saveHistory(true);
+      }
+      if (e.touches.length === 0) {
+        isPinching = false;
+      }
+    });
+
+    // Mouse fallback for PC testing
+    let mouseDown = false;
+    viewport.addEventListener('mousedown', (e) => {
+      mouseDown = true;
+      if (currentTool === 'pan') {
+        pinchStartCenter = { x: e.clientX, y: e.clientY };
+        panStartOffset = { x: panX, y: panY };
+        return;
+      }
+      const pt = getPixelCoords(e.clientX, e.clientY);
+      handleSinglePointAction(pt.x, pt.y);
+    });
+    window.addEventListener('mousemove', (e) => {
+      if (!mouseDown) return;
+      if (currentTool === 'pan') {
+        panX = panStartOffset.x + (e.clientX - pinchStartCenter.x);
+        panY = panStartOffset.y + (e.clientY - pinchStartCenter.y);
+        updateTransform();
+        return;
+      }
+      if (isDrawing && (currentTool === 'pen' || currentTool === 'eraser')) {
+        const pt = getPixelCoords(e.clientX, e.clientY);
+        if (lastPt) drawLine(lastPt.x, lastPt.y, pt.x, pt.y);
+        lastPt = pt;
+      }
+    });
+    window.addEventListener('mouseup', () => {
+      if (isDrawing) {
+        isDrawing = false;
+        lastPt = null;
+        saveHistory(true);
+      }
+      mouseDown = false;
+    });
+
+    function handleSinglePointAction(x, y) {
+      if (x < 0 || y < 0 || x >= spriteSize || y >= spriteSize) return;
+
+      if (currentTool === 'eyedropper') {
+        const p = ctx.getImageData(x, y, 1, 1).data;
+        if (p[3] > 0) {
+          selectColor(rgbToHex(p[0], p[1], p[2]));
+        }
+        return;
+      }
+
+      if (currentTool === 'bucket') {
+        floodFill(x, y, hexToRgba(currentColor), 15);
+        saveHistory(true);
+        return;
+      }
+
+      if (currentTool === 'magicErase') {
+        // Erase contiguous background (with slight tolerance for compression artifacts)
+        floodFill(x, y, [0, 0, 0, 0], 45);
+        saveHistory(true);
+        return;
+      }
+
+      if (currentTool === 'pen' || currentTool === 'eraser') {
+        isDrawing = true;
+        lastPt = { x, y };
+        plotPixel(x, y);
+      }
+    }
+
+    function getTouchDist(t1, t2) {
+      return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
+    }
+    function getTouchCenter(t1, t2) {
+      return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
+    }
+
+    // UI Event Listeners
+    function setTool(toolName) {
+      currentTool = toolName;
+      document.querySelectorAll('.tool-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.tool === toolName);
+      });
+    }
+
+    document.querySelectorAll('.tool-btn').forEach(btn => {
+      btn.addEventListener('click', () => setTool(btn.dataset.tool));
+    });
+
+    document.querySelectorAll('.size-btn[data-size]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        brushSize = parseInt(btn.dataset.size, 10);
+        document.querySelectorAll('.size-btn[data-size]').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+      });
+    });
+
+    document.getElementById('colorPicker').addEventListener('input', (e) => {
+      selectColor(e.target.value);
+    });
+
+    document.getElementById('gridToggleBtn').addEventListener('click', (e) => {
+      showGrid = !showGrid;
+      gridOverlay.classList.toggle('visible', showGrid);
+      e.target.classList.toggle('active', showGrid);
+    });
+
+    document.getElementById('resetViewBtn').addEventListener('click', resetView);
+    document.getElementById('undoBtn').addEventListener('click', undo);
+    document.getElementById('redoBtn').addEventListener('click', redo);
+
+    document.getElementById('toggleConvertBtn').addEventListener('click', () => {
+      document.getElementById('convertDrawer').classList.toggle('open');
+    });
+
+    document.getElementById('fileInput').addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          sourceImage = img;
+          convertImageToSprite();
+          document.getElementById('convertDrawer').classList.add('open');
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('reconvertBtn').addEventListener('click', () => {
+      if (sourceImage) {
+        convertImageToSprite();
+      } else {
+        const targetSize = parseInt(document.getElementById('resSelect').value, 10);
+        initCanvas(targetSize, true);
+      }
+      document.getElementById('convertDrawer').classList.remove('open');
+    });
+
+    document.getElementById('clearCanvasBtn').addEventListener('click', () => {
+      ctx.clearRect(0, 0, spriteSize, spriteSize);
+      saveHistory(true);
+    });
+
+    // Export Logic (1x Raw Game Sprite & 512px Crisp Upscaled)
+    function generateUpscaledDataURL(targetPx) {
+      const outCanvas = document.createElement('canvas');
+      outCanvas.width = targetPx;
+      outCanvas.height = targetPx;
+      const outCtx = outCanvas.getContext('2d');
+      outCtx.imageSmoothingEnabled = false;
+      outCtx.drawImage(spriteCanvas, 0, 0, targetPx, targetPx);
+      return outCanvas.toDataURL('image/png');
+    }
+
+    document.getElementById('exportBtn').addEventListener('click', () => {
+      const previewUrl = generateUpscaledDataURL(512);
+      document.getElementById('exportPreviewImg').src = previewUrl;
+      document.getElementById('exportModal').classList.add('open');
+    });
+
+    document.getElementById('closeModalBtn').addEventListener('click', () => {
+      document.getElementById('exportModal').classList.remove('open');
+    });
+
+    document.getElementById('download1xBtn').addEventListener('click', () => {
+      const url = spriteCanvas.toDataURL('image/png');
+      triggerDownload(url, `sprite_${spriteSize}x${spriteSize}.png`);
+    });
+
+    document.getElementById('download4xBtn').addEventListener('click', () => {
+      const url = generateUpscaledDataURL(512);
+      triggerDownload(url, `sprite_${spriteSize}x${spriteSize}_upscaled512.png`);
+    });
+
+    function triggerDownload(dataUrl, filename) {
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    // Boot
+    window.addEventListener('load', () => {
+      selectColor(currentColor);
+      initCanvas(128, true);
+    });
+  </script>
+</body>
+</html>
