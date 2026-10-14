@@ -194,38 +194,145 @@ button.danger {
 }
 #mini-preview-box {
   position: absolute;
-  top: 44px;
+  top: 6px;
   right: 6px;
-  z-index: 10;
+  z-index: 11;
   background: var(--overlay-bg);
   border: 1px solid var(--border);
   border-radius: 6px;
-  padding: 4px;
-  display: flex;
-  align-items: flex-end;
-  gap: 4px;
+  padding: 3px 4px 4px;
   box-shadow: var(--shadow);
-  cursor: pointer;
 }
-#mini-preview-box.hidden {
+#mini-preview-box.hidden, #mini-show.hidden, #px-reset-view.hidden {
   display: none;
 }
+#mini-head {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  margin-bottom: 3px;
+}
+#mini-grip {
+  font-size: 15px;
+  line-height: 1;
+  padding: 3px 4px;
+  color: var(--text-sub);
+  touch-action: none;
+  cursor: move;
+}
+#mini-head button {
+  min-width: 26px;
+  min-height: 24px;
+  padding: 0 4px;
+  font-size: 12px;
+}
 #mini-fps-tag {
-  position: absolute;
-  top: 2px;
-  left: 4px;
   font-size: 10px;
   font-weight: 700;
   color: #fff;
   background: rgba(0, 0, 0, 0.6);
   padding: 1px 4px;
   border-radius: 3px;
-  pointer-events: none;
+  margin-right: auto;
+}
+#mini-body {
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  cursor: pointer;
+}
+#mini-body.swapped {
+  flex-direction: row-reverse;
 }
 #mini-cv-1x, #mini-cv-2x {
   display: block;
   border: 1px solid rgba(255,255,255,0.35);
   image-rendering: pixelated;
+}
+#mini-show {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 11;
+  background: var(--overlay-bg);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  padding: 0 10px;
+}
+#px-reset-view {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  z-index: 11;
+  background: var(--overlay-bg);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+/* 調色盤（長按色塊） */
+#palette-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 45;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  align-items: flex-end;
+}
+#palette-backdrop.hidden {
+  display: none;
+}
+#palette-sheet {
+  width: 100%;
+  max-height: 72vh;
+  overflow-y: auto;
+  background: var(--panel);
+  border-radius: 12px 12px 0 0;
+  padding: 10px 12px calc(12px + env(safe-area-inset-bottom));
+  box-shadow: var(--shadow);
+}
+.pal-head {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: sticky;
+  top: -10px;
+  background: var(--panel);
+  padding: 4px 0 8px;
+  z-index: 1;
+}
+#pal-cur {
+  width: 30px;
+  height: 30px;
+}
+#pal-picker {
+  width: 44px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: none;
+}
+#pal-hex {
+  width: 84px;
+  min-width: 0;
+  flex: 1;
+  font-family: ui-monospace, Menlo, monospace;
+}
+.pal-group-title {
+  font-size: 12px;
+  color: var(--text-sub);
+  margin: 8px 0 4px;
+}
+.pal-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.swatch-btn {
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
 }
 
 /* 3 & 4. 色條 A / B */
@@ -681,6 +788,26 @@ input[type="file"] {
     <!-- 左上狀態字 -->
     <div id="px-status">×1 紀錄 0/30</div>
 
+    <!-- 小預覽：拖曳標題列移動，按鈕切換對調／縮放／隱藏，點圖切換動畫速度 -->
+    <div id="mini-preview-box" class="stop-touch">
+      <div id="mini-head">
+        <span id="mini-grip" aria-label="拖曳移動小預覽">⠿</span>
+        <span id="mini-fps-tag">8fps</span>
+        <button id="mini-swap" aria-label="靜止圖與動圖對調">⇄</button>
+        <button id="mini-smaller" aria-label="縮小預覽">－</button>
+        <button id="mini-bigger" aria-label="放大預覽">＋</button>
+        <button id="mini-hide" aria-label="隱藏小預覽">✕</button>
+      </div>
+      <div id="mini-body" role="button" aria-label="切換小預覽動畫速度">
+        <canvas id="mini-cv-1x" width="32" height="32"></canvas>
+        <canvas id="mini-cv-2x" width="64" height="64"></canvas>
+      </div>
+    </div>
+    <button id="mini-show" class="stop-touch hidden" aria-label="顯示小預覽">預覽</button>
+
+    <!-- 有縮放或移動時：回到原始位置與大小 -->
+    <button id="px-reset-view" class="stop-touch hidden" aria-label="回到原始位置與大小">⟲ 原尺寸</button>
+
     <!-- 空專案提示 -->
     <div id="empty-hint">
       <span id="empty-hint-btn">從選單開新專案</span>
@@ -724,11 +851,6 @@ input[type="file"] {
       <button id="act-mirror">鏡像：關</button>
     </div>
     <button id="ref-mode-btn" class="stop-touch" aria-label="切換參考模式">參考：原圖</button>
-    <div id="mini-preview-box" class="stop-touch" role="button" aria-label="切換小預覽動畫速度">
-      <span id="mini-fps-tag">8fps</span>
-      <canvas id="mini-cv-1x" width="32" height="32"></canvas>
-      <canvas id="mini-cv-2x" width="64" height="64"></canvas>
-    </div>
 
     <!-- 左虛擬鍵：3x3 十字鍵 -->
     <div id="vpad-left" class="vpad-group stop-touch" aria-label="方向與抓取虛擬鍵">
@@ -758,6 +880,20 @@ input[type="file"] {
 
 <!-- 抓起計時（按住「抓」時顯示在螢幕中央） -->
 <div id="grab-meter" aria-hidden="true">抓起中…<div class="bar"><i></i></div></div>
+
+<!-- 長按色塊：調色盤與常用色 -->
+<div id="palette-backdrop" class="stop-touch hidden">
+  <div id="palette-sheet" role="dialog" aria-label="調色盤">
+    <div class="pal-head">
+      <span class="swatch-inline checker-bg" id="pal-cur"></span>
+      <input type="color" id="pal-picker" value="#000000" aria-label="自訂顏色">
+      <input type="text" id="pal-hex" maxlength="7" placeholder="#rrggbb" aria-label="色碼">
+      <button id="pal-use" class="primary">用這色</button>
+      <button id="pal-close">關閉</button>
+    </div>
+    <div id="pal-groups"></div>
+  </div>
+</div>
 
 <!-- 工具選單浮層 -->
 <div id="tool-popover" class="stop-touch hidden" role="dialog" aria-label="工具選單">
@@ -939,7 +1075,10 @@ input[type="file"] {
     showMiniPrev: true,
     sampleScope: 'cell', // 'cell' | '8' | '16'
     refMode: 'hi', // 'hi' | 'base' | 'prev' | 'next'
-    showVpad: true
+    showVpad: true,
+    miniScale: 1,     // 小預覽放大倍數
+    miniSwap: false,  // true：動圖在左、靜止圖在右
+    miniPos: null     // {x, y}：在畫布區內的位置（0~1 比例），null 為右上角
   };
 
   let prefs = { ...defaultPrefs };
@@ -1268,17 +1407,25 @@ input[type="file"] {
     updateStatusText();
   }
 
+  // 任何縮放都能自由移動，只保證畫格至少有一小塊留在畫布區內
   function clampView() {
     const { w, h } = getCellBounds();
     state.zoom = Math.max(MIN_ZOOM, Math.min(16, state.zoom));
     if (Math.abs(state.zoom - 1) < 0.04) state.zoom = 1;
-    if (state.zoom <= 1) {
-      state.panX = w / 2;
-      state.panY = h / 2;
-    } else {
-      state.panX = Math.max(0, Math.min(w, state.panX));
-      state.panY = Math.max(0, Math.min(h, state.panY));
-    }
+    const cv = document.getElementById('px-cv');
+    const cssW = cv.clientWidth || 1;
+    const cssH = cv.clientHeight || 1;
+    const scale = Math.min(cssW / w, cssH / h) * 0.92 * state.zoom;
+    const keep = 24 / scale; // 至少留 24px 在畫面上
+    const halfW = cssW / 2 / scale;
+    const halfH = cssH / 2 / scale;
+    state.panX = Math.max(-halfW + Math.min(w, keep), Math.min(w + halfW - Math.min(w, keep), state.panX));
+    state.panY = Math.max(-halfH + Math.min(h, keep), Math.min(h + halfH - Math.min(h, keep), state.panY));
+  }
+
+  function isViewAtHome() {
+    const { w, h } = getCellBounds();
+    return state.zoom === 1 && Math.abs(state.panX - w / 2) < 0.01 && Math.abs(state.panY - h / 2) < 0.01;
   }
 
   function clampCursor() {
@@ -1952,7 +2099,7 @@ input[type="file"] {
     if (state.recents.length > 10) state.recents.length = 10;
   }
 
-  function createSwatchButton(hex, pct = null) {
+  function createSwatchButton(hex, pct = null, longPress = true) {
     const btn = document.createElement('button');
     btn.className = 'swatch-btn';
     const isTrans = !hex || hex === 'transparent';
@@ -1979,8 +2126,153 @@ input[type="file"] {
     btn.addEventListener('click', () => {
       handleSwatchSelect(isTrans ? null : hex);
     });
+    if (longPress) attachLongPress(btn, () => openPalette(isTrans ? null : hex));
     return btn;
   }
+
+  // 長按（約 0.45 秒）觸發，觸發後吃掉接下來那一下 click；手指移動（捲動色條）就取消
+  function attachLongPress(el, fn) {
+    let timer = null;
+    let fired = false;
+    let sx = 0;
+    let sy = 0;
+    const clear = () => {
+      if (timer) clearTimeout(timer);
+      timer = null;
+    };
+    const begin = (x, y) => {
+      fired = false;
+      sx = x;
+      sy = y;
+      clear();
+      timer = setTimeout(() => {
+        timer = null;
+        fired = true;
+        fn();
+      }, 450);
+    };
+    el.addEventListener('touchstart', (e) => begin(e.touches[0].clientX, e.touches[0].clientY), { passive: true });
+    el.addEventListener('touchmove', (e) => {
+      const t = e.touches[0];
+      if (Math.hypot(t.clientX - sx, t.clientY - sy) > 8) clear();
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      clear();
+      if (fired) e.preventDefault();
+    });
+    el.addEventListener('touchcancel', clear);
+    el.addEventListener('mousedown', (e) => begin(e.clientX, e.clientY));
+    el.addEventListener('mouseleave', clear);
+    el.addEventListener('mouseup', clear);
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
+    el.addEventListener('click', (e) => {
+      if (fired) {
+        fired = false;
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+    }, true);
+  }
+
+  // --- 調色盤：自訂色＋各場合常用色 ---
+  const PALETTE_GROUPS = [
+    ['黑白灰', [null, '#000000', '#202020', '#484848', '#808080', '#b8b8b8', '#e0e0e0', '#ffffff']],
+    ['膚色', ['#fff0e0', '#ffe0c8', '#f8c8a0', '#e8a878', '#c88858', '#a06838', '#704828', '#4a2c18']],
+    ['頭髮', ['#2a2030', '#4a3020', '#7a5030', '#a87040', '#c89850', '#f0d878', '#b8b8c8', '#c84830']],
+    ['眼睛／嘴', ['#1a1a2e', '#3060c0', '#40a060', '#8a5030', '#c02840', '#f08890', '#ffffff']],
+    ['王國藍布料', ['#f8f0e0', '#c8e0f8', '#88c0f0', '#3a78d0', '#20489a', '#102860']],
+    ['金（黎明金）', ['#fff8c0', '#fff0a0', '#f0c840', '#c89020', '#8a5a10', '#5a3808']],
+    ['銀／鐵', ['#ffffff', '#d0d8e0', '#a0a8b8', '#687080', '#383c48', '#20222a']],
+    ['皮革／木頭', ['#e8b878', '#c08048', '#8a5830', '#5a3820', '#3a2010']],
+    ['草木', ['#e0f8a0', '#c8f080', '#80c848', '#48a038', '#287028', '#184818']],
+    ['水／天空', ['#e0f8ff', '#a0d8f8', '#58a8e8', '#2868c0', '#183880', '#0c1c48']],
+    ['石／土地', ['#e0d8c8', '#b0a890', '#807860', '#585040', '#383028']],
+    ['火／血', ['#fff0a0', '#ffb040', '#f06020', '#c02828', '#701818']],
+    ['魔法紫', ['#f0e8ff', '#e0d0ff', '#a088f0', '#6848c8', '#402888', '#201448']],
+    ['夜／陰影', ['#5a6890', '#3a4068', '#2a2a48', '#1a1a2e', '#0c0c18']]
+  ];
+
+  const palBackdrop = document.getElementById('palette-backdrop');
+  const palPicker = document.getElementById('pal-picker');
+  const palHex = document.getElementById('pal-hex');
+  const palCur = document.getElementById('pal-cur');
+  let palBuilt = false;
+
+  function normalizeHex(v) {
+    let t = String(v || '').trim().toLowerCase();
+    if (!t.startsWith('#')) t = '#' + t;
+    if (/^#[0-9a-f]{3}$/.test(t)) t = '#' + t[1] + t[1] + t[2] + t[2] + t[3] + t[3];
+    return /^#[0-9a-f]{6}$/.test(t) ? t : null;
+  }
+
+  function setPaletteDraft(hex) {
+    if (hex) {
+      palPicker.value = hex;
+      palHex.value = hex;
+      palCur.style.backgroundColor = hex;
+      palCur.classList.remove('checker-bg');
+    } else {
+      palHex.value = '';
+      palCur.style.backgroundColor = '';
+      palCur.classList.add('checker-bg');
+    }
+  }
+
+  function closePalette() {
+    palBackdrop.classList.add('hidden');
+  }
+
+  function choosePaletteColor(hex) {
+    closePalette();
+    handleSwatchSelect(hex);
+  }
+
+  function openPalette(hex) {
+    if (!palBuilt) {
+      const wrap = document.getElementById('pal-groups');
+      for (const [title, colors] of PALETTE_GROUPS) {
+        const t = document.createElement('div');
+        t.className = 'pal-group-title';
+        t.textContent = title;
+        const row = document.createElement('div');
+        row.className = 'pal-row';
+        for (const c of colors) {
+          const b = createSwatchButton(c, null, false);
+          b.classList.remove('selected');
+          b.addEventListener('click', closePalette);
+          row.appendChild(b);
+        }
+        wrap.appendChild(t);
+        wrap.appendChild(row);
+      }
+      palBuilt = true;
+    }
+    setPaletteDraft(hex === undefined ? state.penColor : hex);
+    palBackdrop.classList.remove('hidden');
+  }
+
+  palPicker.addEventListener('input', () => setPaletteDraft(palPicker.value));
+  palHex.addEventListener('input', () => {
+    const h = normalizeHex(palHex.value);
+    if (h) {
+      palPicker.value = h;
+      palCur.style.backgroundColor = h;
+      palCur.classList.remove('checker-bg');
+    }
+  });
+  document.getElementById('pal-use').addEventListener('click', () => {
+    const h = normalizeHex(palHex.value) || normalizeHex(palPicker.value);
+    if (!h) {
+      showToast('色碼格式：#rrggbb');
+      return;
+    }
+    choosePaletteColor(h);
+  });
+  document.getElementById('pal-close').addEventListener('click', closePalette);
+  document.getElementById('top-pen-swatch').addEventListener('click', () => openPalette());
+  palBackdrop.addEventListener('click', (e) => {
+    if (e.target === palBackdrop) closePalette();
+  });
 
   function handleSwatchSelect(hex) {
     state.penColor = hex;
@@ -2371,6 +2663,9 @@ input[type="file"] {
     document.getElementById('vpad-left').classList.toggle('hidden', !prefs.showVpad);
     document.getElementById('vpad-right').classList.toggle('hidden', !prefs.showVpad);
     document.getElementById('mini-preview-box').classList.toggle('hidden', !prefs.showMiniPrev);
+    document.getElementById('mini-show').classList.toggle('hidden', prefs.showMiniPrev || !state.hasProject);
+    document.getElementById('mini-body').classList.toggle('swapped', !!prefs.miniSwap);
+    placeMiniPreview();
     document.getElementById('mini-fps-tag').textContent = prefs.fps === 0 ? '靜止' : `${prefs.fps}fps`;
     document.getElementById('empty-hint').classList.toggle('hidden', state.hasProject);
 
@@ -2562,6 +2857,7 @@ input[type="file"] {
 
   function renderAll() {
     renderPending = false;
+    document.getElementById('px-reset-view').classList.toggle('hidden', !state.hasProject || isViewAtHome());
     const mRef = getViewMetrics(refCv);
     const mPx = getViewMetrics(pxCv);
 
@@ -2642,6 +2938,12 @@ input[type="file"] {
       cv2.width = w * 2;
       cv2.height = h * 2;
     }
+
+    const ms = prefs.miniScale || 1;
+    cv1.style.width = Math.round(w * ms) + 'px';
+    cv1.style.height = Math.round(h * ms) + 'px';
+    cv2.style.width = Math.round(w * 2 * ms) + 'px';
+    cv2.style.height = Math.round(h * 2 * ms) + 'px';
 
     const ctx1 = cv1.getContext('2d');
     fillCanvasBackground(ctx1, 0, 0, w, h, 4);
@@ -3335,7 +3637,96 @@ input[type="file"] {
     requestRender();
   });
 
-  document.getElementById('mini-preview-box').addEventListener('click', () => {
+  // --- 小預覽：移動、縮放、對調、隱藏 ---
+  const MINI_SCALES = [0.5, 0.75, 1, 1.5, 2, 3];
+  function placeMiniPreview() {
+    const box = document.getElementById('mini-preview-box');
+    const pane = document.getElementById('px-pane');
+    if (!prefs.miniPos) {
+      box.style.left = '';
+      box.style.top = '';
+      box.style.right = '6px';
+      return;
+    }
+    const maxX = Math.max(0, pane.clientWidth - box.offsetWidth);
+    const maxY = Math.max(0, pane.clientHeight - box.offsetHeight);
+    box.style.right = 'auto';
+    box.style.left = Math.round(Math.max(0, Math.min(1, prefs.miniPos.x)) * maxX) + 'px';
+    box.style.top = Math.round(Math.max(0, Math.min(1, prefs.miniPos.y)) * maxY) + 'px';
+  }
+
+  (() => {
+    const box = document.getElementById('mini-preview-box');
+    const grip = document.getElementById('mini-grip');
+    const pane = document.getElementById('px-pane');
+    let drag = null;
+    const start = (x, y) => {
+      const b = box.getBoundingClientRect();
+      drag = { dx: x - b.left, dy: y - b.top };
+    };
+    const move = (x, y) => {
+      if (!drag) return;
+      const p = pane.getBoundingClientRect();
+      const maxX = Math.max(1, p.width - box.offsetWidth);
+      const maxY = Math.max(1, p.height - box.offsetHeight);
+      prefs.miniPos = {
+        x: Math.max(0, Math.min(1, (x - drag.dx - p.left) / maxX)),
+        y: Math.max(0, Math.min(1, (y - drag.dy - p.top) / maxY))
+      };
+      placeMiniPreview();
+    };
+    const end = () => {
+      if (!drag) return;
+      drag = null;
+      savePrefs();
+    };
+    grip.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      start(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+    grip.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      move(e.touches[0].clientX, e.touches[0].clientY);
+    }, { passive: false });
+    grip.addEventListener('touchend', end);
+    grip.addEventListener('touchcancel', end);
+    grip.addEventListener('mousedown', (e) => start(e.clientX, e.clientY));
+    window.addEventListener('mousemove', (e) => move(e.clientX, e.clientY));
+    window.addEventListener('mouseup', end);
+    window.addEventListener('resize', placeMiniPreview);
+  })();
+
+  function setMiniScale(dir) {
+    let idx = MINI_SCALES.indexOf(prefs.miniScale);
+    if (idx === -1) idx = MINI_SCALES.indexOf(1);
+    idx = Math.max(0, Math.min(MINI_SCALES.length - 1, idx + dir));
+    prefs.miniScale = MINI_SCALES[idx];
+    savePrefs();
+    renderMiniPreview();
+    placeMiniPreview();
+    showToast(`小預覽 ×${prefs.miniScale}`);
+  }
+  document.getElementById('mini-smaller').addEventListener('click', () => setMiniScale(-1));
+  document.getElementById('mini-bigger').addEventListener('click', () => setMiniScale(1));
+  document.getElementById('mini-swap').addEventListener('click', () => {
+    prefs.miniSwap = !prefs.miniSwap;
+    savePrefs();
+    updateUIState();
+  });
+  document.getElementById('mini-hide').addEventListener('click', () => {
+    prefs.showMiniPrev = false;
+    savePrefs();
+    updateUIState();
+  });
+  document.getElementById('mini-show').addEventListener('click', () => {
+    prefs.showMiniPrev = true;
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+  document.getElementById('px-reset-view').addEventListener('click', resetView);
+
+  document.getElementById('mini-body').addEventListener('click', () => {
     const order = [8, 12, 4, 0];
     const idx = order.indexOf(prefs.fps);
     prefs.fps = order[(idx + 1) % order.length];
