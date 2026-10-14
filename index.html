@@ -184,7 +184,7 @@ button.danger {
 /* 2. 參考畫布浮動控制 */
 #ref-mode-btn {
   position: absolute;
-  top: 6px;
+  top: 44px;
   left: 6px;
   z-index: 10;
   background: var(--overlay-bg);
@@ -194,7 +194,7 @@ button.danger {
 }
 #mini-preview-box {
   position: absolute;
-  top: 6px;
+  top: 44px;
   right: 6px;
   z-index: 10;
   background: var(--overlay-bg);
@@ -332,7 +332,7 @@ button.danger {
 }
 #px-status {
   position: absolute;
-  top: 42px;
+  top: 6px;
   left: 6px;
   z-index: 10;
   background: rgba(0, 0, 0, 0.58);
@@ -643,22 +643,6 @@ input[type="file"] {
   <section id="px-pane" class="canvas-pane">
     <canvas id="px-cv" class="main-cv"></canvas>
 
-    <!-- 動作列 -->
-    <div id="action-bar" class="stop-touch" aria-label="編輯動作列">
-      <button id="act-commit" class="primary" style="display:none;">確定</button>
-      <button id="act-cancel" class="danger" style="display:none;">取消</button>
-      <button id="act-deselect" style="display:none;">取消選取</button>
-      <button id="act-select-all">圈選全格</button>
-      <button id="act-clear-sel" class="danger">清空選取</button>
-      <button id="act-copy">複製</button>
-      <button id="act-paste">貼上</button>
-      <button id="act-restore-ref">還原參考色</button>
-      <button id="act-flip-h">左右翻轉</button>
-      <button id="act-flip-v">上下翻轉</button>
-      <button id="act-center-h">水平置中</button>
-      <button id="act-center-v">垂直置中</button>
-      <button id="act-mirror">鏡像：關</button>
-    </div>
 
     <!-- 左上狀態字 -->
     <div id="px-status">×1 紀錄 0/30</div>
@@ -688,6 +672,23 @@ input[type="file"] {
   <!-- 2. 參考畫布 -->
   <section id="ref-pane" class="canvas-pane">
     <canvas id="ref-cv" class="main-cv"></canvas>
+
+    <!-- 動作列 -->
+    <div id="action-bar" class="stop-touch" aria-label="編輯動作列">
+      <button id="act-commit" class="primary" style="display:none;">確定</button>
+      <button id="act-cancel" class="danger" style="display:none;">取消</button>
+      <button id="act-deselect" style="display:none;">取消選取</button>
+      <button id="act-select-all">圈選全格</button>
+      <button id="act-clear-sel" class="danger">清空選取</button>
+      <button id="act-copy">複製</button>
+      <button id="act-paste">貼上</button>
+      <button id="act-restore-ref">還原參考色</button>
+      <button id="act-flip-h">左右翻轉</button>
+      <button id="act-flip-v">上下翻轉</button>
+      <button id="act-center-h">水平置中</button>
+      <button id="act-center-v">垂直置中</button>
+      <button id="act-mirror">鏡像：關</button>
+    </div>
     <button id="ref-mode-btn" class="stop-touch" aria-label="切換參考模式">參考：原圖</button>
     <div id="mini-preview-box" class="stop-touch" role="button" aria-label="切換小預覽動畫速度">
       <span id="mini-fps-tag">8fps</span>
