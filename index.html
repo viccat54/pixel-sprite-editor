@@ -20,7 +20,7 @@
   --accent-fg: #ffffff;
   --danger: #dc2626;
   --danger-fg: #ffffff;
-  --overlay-bg: rgba(255, 255, 255, 0.84);
+  --overlay-bg: rgba(255, 255, 255, 0.94);
   --vpad-bg: rgba(255, 255, 255, 0.65);
   --vpad-btn: rgba(243, 244, 246, 0.88);
   --vpad-active: #bfdbfe;
@@ -38,7 +38,7 @@
     --accent-fg: #ffffff;
     --danger: #ef4444;
     --danger-fg: #ffffff;
-    --overlay-bg: rgba(31, 41, 55, 0.86);
+    --overlay-bg: rgba(31, 41, 55, 0.94);
     --vpad-bg: rgba(17, 24, 39, 0.62);
     --vpad-btn: rgba(55, 65, 81, 0.88);
     --vpad-active: #1d4ed8;
@@ -188,8 +188,6 @@ button.danger {
   left: 6px;
   z-index: 10;
   background: var(--overlay-bg);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   box-shadow: var(--shadow);
   font-size: 12px;
   padding: 0 10px;
@@ -200,8 +198,6 @@ button.danger {
   right: 6px;
   z-index: 10;
   background: var(--overlay-bg);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border: 1px solid var(--border);
   border-radius: 6px;
   padding: 4px;
@@ -321,8 +317,6 @@ button.danger {
   gap: 4px;
   padding: 0 6px;
   background: var(--overlay-bg);
-  backdrop-filter: blur(4px);
-  -webkit-backdrop-filter: blur(4px);
   border-bottom: 1px solid var(--border);
   overflow-x: auto;
   overflow-y: hidden;
@@ -331,6 +325,7 @@ button.danger {
   -webkit-overflow-scrolling: touch;
 }
 #action-bar button {
+  flex-shrink: 0;
   min-height: 30px;
   font-size: 12px;
   padding: 0 8px;
@@ -353,8 +348,6 @@ button.danger {
   bottom: 6px;
   z-index: 14;
   background: var(--vpad-bg);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
   padding: 6px;
   border-radius: 10px;
   border: 1px solid var(--border);
@@ -398,6 +391,11 @@ button.danger {
   grid-column: 1 / span 2;
   font-size: 14px;
   font-weight: 700;
+}
+.vpad-group button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
 }
 
 /* 工具浮出選單 */
