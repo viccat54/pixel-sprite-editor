@@ -208,9 +208,13 @@ button.danger {
 }
 #mini-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 3px;
   margin-bottom: 3px;
+  /* 標題列不撐寬外框：外框寬度跟著預覽圖，按鈕放不下就換行 */
+  width: 0;
+  min-width: 100%;
 }
 #mini-grip {
   font-size: 15px;
