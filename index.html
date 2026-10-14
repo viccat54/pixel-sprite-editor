@@ -241,9 +241,6 @@ button.danger {
   gap: 4px;
   cursor: pointer;
 }
-#mini-body.swapped {
-  flex-direction: row-reverse;
-}
 #mini-cv-1x, #mini-cv-2x {
   display: block;
   border: 1px solid rgba(255,255,255,0.35);
@@ -3084,7 +3081,6 @@ input[type="file"] {
     updateLayerUI();
     document.getElementById('mini-preview-box').classList.toggle('hidden', !prefs.showMiniPrev);
     document.getElementById('mini-show').classList.toggle('hidden', prefs.showMiniPrev || !state.hasProject);
-    document.getElementById('mini-body').classList.toggle('swapped', !!prefs.miniSwap);
     placeMiniPreview();
     document.getElementById('mini-fps-tag').textContent = prefs.fps === 0 ? '靜止' : `${prefs.fps}fps`;
     document.getElementById('empty-hint').classList.toggle('hidden', state.hasProject);
@@ -3376,18 +3372,23 @@ input[type="file"] {
     cv2.style.width = Math.round(w * 2 * ms) + 'px';
     cv2.style.height = Math.round(h * 2 * ms) + 'px';
 
+    // 左邊小框 1x、右邊大框 2x；對調時靜止圖和動圖連大小一起交換
+    const comp = getComposite();
+    const animCol = prefs.fps === 0 ? state.cellCol : (state.animFrame % state.cols);
+    const ab = getCellBounds(animCol, state.cellRow);
+    const still = { sx, sy, w, h };
+    const smallSrc = prefs.miniSwap ? ab : still;
+    const bigSrc = prefs.miniSwap ? still : ab;
+
     const ctx1 = cv1.getContext('2d');
     fillCanvasBackground(ctx1, 0, 0, w, h, 4);
     ctx1.imageSmoothingEnabled = false;
-    const comp = getComposite();
-    ctx1.drawImage(comp, sx, sy, w, h, 0, 0, w, h);
+    ctx1.drawImage(comp, smallSrc.sx, smallSrc.sy, smallSrc.w, smallSrc.h, 0, 0, smallSrc.w, smallSrc.h);
 
-    const animCol = prefs.fps === 0 ? state.cellCol : (state.animFrame % state.cols);
-    const ab = getCellBounds(animCol, state.cellRow);
     const ctx2 = cv2.getContext('2d');
     fillCanvasBackground(ctx2, 0, 0, w * 2, h * 2, 8);
     ctx2.imageSmoothingEnabled = false;
-    ctx2.drawImage(comp, ab.sx, ab.sy, ab.w, ab.h, 0, 0, ab.w * 2, ab.h * 2);
+    ctx2.drawImage(comp, bigSrc.sx, bigSrc.sy, bigSrc.w, bigSrc.h, 0, 0, bigSrc.w * 2, bigSrc.h * 2);
   }
 
   function renderFullSheetPreview() {
@@ -4300,6 +4301,7 @@ input[type="file"] {
     prefs.miniSwap = !prefs.miniSwap;
     savePrefs();
     updateUIState();
+    renderMiniPreview();
   });
   document.getElementById('mini-hide').addEventListener('click', () => {
     prefs.showMiniPrev = false;
