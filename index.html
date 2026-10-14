@@ -392,13 +392,47 @@ button.danger {
   opacity: 0.85;
 }
 #vk-grab.holding {
-  background: linear-gradient(to top, var(--accent) 0 50%, var(--vpad-btn) 50% 100%);
-  background-size: 100% 200%;
-  background-position: 0 0;
-  animation: grab-fill 2s linear forwards;
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+#grab-meter {
+  position: fixed;
+  left: 50%;
+  top: 30%;
+  transform: translate(-50%, -50%);
+  z-index: 60;
+  width: 180px;
+  padding: 10px 14px 12px;
+  border-radius: 12px;
+  background: rgba(17, 24, 39, 0.88);
+  color: #fff;
+  font-size: 14px;
+  font-weight: 700;
+  text-align: center;
+  pointer-events: none;
+  display: none;
+}
+#grab-meter.show {
+  display: block;
+}
+#grab-meter .bar {
+  margin-top: 8px;
+  height: 8px;
+  border-radius: 4px;
+  background: rgba(255, 255, 255, 0.25);
+  overflow: hidden;
+}
+#grab-meter .bar i {
+  display: block;
+  height: 100%;
+  width: 0;
+  background: var(--accent);
+}
+#grab-meter.show .bar i {
+  animation: grab-fill 1s linear forwards;
 }
 @keyframes grab-fill {
-  to { background-position: 0 100%; }
+  to { width: 100%; }
 }
 #btn-big-action {
   grid-column: 1 / span 2;
@@ -721,6 +755,9 @@ input[type="file"] {
 
 
 </div>
+
+<!-- 抓起計時（按住「抓」時顯示在螢幕中央） -->
+<div id="grab-meter" aria-hidden="true">抓起中…<div class="bar"><i></i></div></div>
 
 <!-- 工具選單浮層 -->
 <div id="tool-popover" class="stop-touch hidden" role="dialog" aria-label="工具選單">
@@ -3093,13 +3130,15 @@ input[type="file"] {
   bindDpadButton('vk-down-right', 1, 1);
 
   // 抓／放下
-  // 抓起要按住 2 秒（避免誤觸），放下點一下就好；按住時按鈕會由下往上填滿
-  const GRAB_HOLD_MS = 2000;
+  // 抓起要按住 1 秒（避免誤觸），放下點一下就好；手指會蓋住按鈕，所以進度條顯示在螢幕中央
+  const GRAB_HOLD_MS = 1000;
   const grabEl = document.getElementById('vk-grab');
+  const grabMeter = document.getElementById('grab-meter');
   let grabTimer = null;
   const stopGrabHold = () => {
     if (grabTimer) { clearTimeout(grabTimer); grabTimer = null; }
     grabEl.classList.remove('holding');
+    grabMeter.classList.remove('show');
   };
   const startGrabHold = (e) => {
     e.preventDefault();
@@ -3110,15 +3149,20 @@ input[type="file"] {
     }
     stopGrabHold();
     grabEl.classList.add('holding');
+    // 重新觸發動畫：先拿掉 class 並強制重排
+    grabMeter.classList.remove('show');
+    void grabMeter.offsetWidth;
+    grabMeter.classList.add('show');
     grabTimer = setTimeout(() => {
       grabTimer = null;
       grabEl.classList.remove('holding');
+      grabMeter.classList.remove('show');
       startFloatingFromSelection(true);
       showToast('抓住了：用十字鍵移動，再按『放下』寫入');
     }, GRAB_HOLD_MS);
   };
   const cancelGrabHold = () => {
-    if (grabTimer) showToast('按住「抓」2 秒才會抓起');
+    if (grabTimer) showToast('按住「抓」1 秒才會抓起');
     stopGrabHold();
   };
   grabEl.addEventListener('touchstart', startGrabHold, { passive: false });
