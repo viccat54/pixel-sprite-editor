@@ -270,6 +270,86 @@ button.danger {
   padding: 0 10px;
 }
 
+/* 圖層 */
+#layer-btn {
+  position: absolute;
+  top: 32px;
+  left: 6px;
+  z-index: 11;
+  background: var(--overlay-bg);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  padding: 0 10px;
+  max-width: 55%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#layer-btn.hidden, #layer-pop.hidden {
+  display: none;
+}
+#layer-pop {
+  position: absolute;
+  top: 68px;
+  left: 6px;
+  z-index: 30;
+  width: min(360px, calc(100% - 12px));
+  max-height: calc(100% - 74px);
+  overflow-y: auto;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+}
+.layer-pop-head {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+#layer-pop-title {
+  flex: 1;
+  font-size: 12px;
+  font-weight: 700;
+}
+.layer-pop-head button {
+  font-size: 12px;
+  padding: 0 7px;
+}
+.layer-row {
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px;
+  border-radius: 6px;
+}
+.layer-row.active {
+  background: var(--vpad-active);
+}
+.layer-row button {
+  min-width: 30px;
+  min-height: 32px;
+  padding: 0 4px;
+  font-size: 13px;
+}
+.layer-row .layer-name {
+  flex: 1;
+  min-width: 0;
+  text-align: left;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.layer-row.off .layer-name {
+  opacity: 0.45;
+}
+.layer-row input {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+}
+
 /* 調色盤（長按色塊） */
 #palette-backdrop {
   position: fixed;
@@ -788,6 +868,18 @@ input[type="file"] {
     <!-- 左上狀態字 -->
     <div id="px-status">×1 紀錄 0/30</div>
 
+    <!-- 圖層：按鈕顯示目前圖層，點開浮動清單 -->
+    <button id="layer-btn" class="stop-touch hidden" aria-label="圖層清單">圖層：底圖 ▾</button>
+    <div id="layer-pop" class="stop-touch hidden" role="dialog" aria-label="圖層">
+      <div class="layer-pop-head">
+        <span id="layer-pop-title">圖層</span>
+        <button id="layer-add">＋ 新增</button>
+        <button id="layer-dim">其他變淡：關</button>
+        <button id="layer-close">關閉</button>
+      </div>
+      <div id="layer-list"></div>
+    </div>
+
     <!-- 小預覽：拖曳標題列移動，按鈕切換對調／縮放／隱藏，點圖切換動畫速度 -->
     <div id="mini-preview-box" class="stop-touch">
       <div id="mini-head">
@@ -843,6 +935,7 @@ input[type="file"] {
       <button id="act-clear-sel" class="danger">清空選取</button>
       <button id="act-copy">複製</button>
       <button id="act-paste">貼上</button>
+      <button id="act-move-layer">移到圖層…</button>
       <button id="act-restore-ref">還原參考色</button>
       <button id="act-flip-h">左右翻轉</button>
       <button id="act-flip-v">上下翻轉</button>
@@ -979,6 +1072,10 @@ input[type="file"] {
           <option value="fliph">左右翻轉</option>
           <option value="flipv">上下翻轉</option>
         </select>
+        <select id="sel-copy-layers" aria-label="複製哪些圖層">
+          <option value="all">全部圖層</option>
+          <option value="active">只有目前圖層</option>
+        </select>
         <button id="btn-copy-cell-exec" class="primary">複製過去（覆蓋目標格）</button>
       </div>
     </div>
@@ -1027,6 +1124,7 @@ input[type="file"] {
       <h3>7. 匯出／匯入</h3>
       <div class="form-row">
         <button id="btn-export-png" class="primary">匯出 PNG</button>
+        <button id="btn-export-layers">分層匯出</button>
         <button id="btn-export-proj">匯出專案</button>
         <label for="file-import-proj" style="min-width:auto;">
           <span role="button" tabindex="0" id="btn-import-proj-trigger" style="display:inline-flex;align-items:center;justify-content:center;padding:0 10px;min-height:34px;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer;">匯入專案</span>
@@ -1078,7 +1176,8 @@ input[type="file"] {
     showVpad: true,
     miniScale: 1,     // 小預覽放大倍數
     miniSwap: false,  // true：動圖在左、靜止圖在右
-    miniPos: null     // {x, y}：在畫布區內的位置（0~1 比例），null 為右上角
+    miniPos: null,    // {x, y}：在畫布區內的位置（0~1 比例），null 為右上角
+    layerDim: false   // 其他圖層變淡
   };
 
   let prefs = { ...defaultPrefs };
@@ -1147,9 +1246,15 @@ input[type="file"] {
 
     // 離屏畫布與資料
     hiCanvas: null,
-    pxCanvas: null,
+    pxCanvas: null,   // 永遠指向「目前圖層」的畫布
     pxCtx: null,
     baseCanvas: null,
+
+    // 圖層（整張表共用，由下往上）：{id, name, canvas, ctx, visible, locked}
+    layers: [],
+    activeLayerId: null,
+    compCanvas: null, // 顯示中圖層的合成圖
+    layerSeq: 0,
 
     cols: 1,
     rows: 1,
@@ -1344,10 +1449,11 @@ input[type="file"] {
       commitFloating();
     }
     try {
-      const [hiBlob, pxBlob, baseBlob] = await Promise.all([
+      const [hiBlob, pxBlob, baseBlob, ...layerBlobs] = await Promise.all([
         canvasToBlob(state.hiCanvas),
-        canvasToBlob(state.pxCanvas),
-        canvasToBlob(state.baseCanvas)
+        canvasToBlob(buildComposite()),
+        canvasToBlob(state.baseCanvas),
+        ...state.layers.map(l => canvasToBlob(l.canvas))
       ]);
       const rec = {
         id: state.projId,
@@ -1356,6 +1462,14 @@ input[type="file"] {
         hiPng: hiBlob,
         pxPng: pxBlob,
         basePng: baseBlob,
+        layers: state.layers.map((l, i) => ({
+          id: l.id,
+          name: l.name,
+          visible: l.visible,
+          locked: l.locked,
+          png: layerBlobs[i]
+        })),
+        activeLayerId: state.activeLayerId,
         recents: state.recents.slice(0, 10),
         updatedAt: Date.now()
       };
@@ -1434,6 +1548,273 @@ input[type="file"] {
     state.curY = Math.max(0, Math.min(h - 1, Math.floor(state.curY)));
   }
 
+  // --- 圖層 ---
+  // state.pxCanvas / pxCtx 永遠指向目前圖層，所以既有的編輯程式都只會動到目前圖層
+  const MAX_LAYERS = 8;
+
+  function makeLayer(name, canvas) {
+    let cv = canvas;
+    if (!cv) {
+      const ref = state.layers[0] ? state.layers[0].canvas : state.pxCanvas;
+      cv = document.createElement('canvas');
+      cv.width = ref.width;
+      cv.height = ref.height;
+    }
+    state.layerSeq += 1;
+    return {
+      id: 'L' + Date.now().toString(36) + '_' + state.layerSeq,
+      name,
+      canvas: cv,
+      ctx: cv.getContext('2d'),
+      visible: true,
+      locked: false
+    };
+  }
+
+  function getLayer(id) {
+    return state.layers.find(l => l.id === id) || null;
+  }
+
+  function getActiveLayer() {
+    return getLayer(state.activeLayerId);
+  }
+
+  function initLayers(list, activeId) {
+    state.layers = list;
+    state.compCanvas = null;
+    const act = list.find(l => l.id === activeId) || list[0];
+    state.activeLayerId = act.id;
+    state.pxCanvas = act.canvas;
+    state.pxCtx = act.ctx;
+  }
+
+  function initSingleLayer(cv) {
+    state.layers = [];
+    state.layerSeq = 0;
+    initLayers([makeLayer('底圖', cv)]);
+  }
+
+  // 由存檔還原圖層；沒有圖層資料（舊專案）或讀取失敗時用合併圖當唯一的「底圖」
+  async function restoreLayers(list, fallbackCv, activeId, srcKey) {
+    state.layers = [];
+    state.layerSeq = 0;
+    if (Array.isArray(list) && list.length) {
+      try {
+        const cvs = await Promise.all(list.map(l => loadImageFromSource(l[srcKey])));
+        if (cvs.every(Boolean)) {
+          const layers = list.map((l, i) => {
+            const lay = makeLayer(l.name || `圖層 ${i + 1}`, cvs[i]);
+            if (l.id) lay.id = l.id;
+            lay.visible = l.visible !== false;
+            lay.locked = !!l.locked;
+            return lay;
+          });
+          initLayers(layers, activeId);
+          return;
+        }
+      } catch (e) {}
+      showToast('圖層讀取失敗，改用合併圖');
+    }
+    initSingleLayer(fallbackCv);
+  }
+
+  function setActiveLayer(id, commitFirst = true) {
+    const lay = getLayer(id);
+    if (!lay) return;
+    if (commitFirst && state.floating) commitFloating();
+    state.activeLayerId = id;
+    state.pxCanvas = lay.canvas;
+    state.pxCtx = lay.ctx;
+    state.lastSwatchPaint = null;
+    state.circleStart = null;
+    refreshUsedColors();
+    updateLayerUI();
+    updateTopInfo();
+    requestRender();
+  }
+
+  // 目前圖層被鎖定或隱藏時擋下編輯
+  function canEditActiveLayer() {
+    const lay = getActiveLayer();
+    if (!lay) return true;
+    if (lay.locked) {
+      showToast(`「${lay.name}」已鎖定，不能畫`);
+      return false;
+    }
+    if (!lay.visible) {
+      showToast(`「${lay.name}」已隱藏，不能畫`);
+      return false;
+    }
+    return true;
+  }
+
+  function buildComposite() {
+    if (!state.layers.length) return state.pxCanvas;
+    const ref = state.layers[0].canvas;
+    if (!state.compCanvas || state.compCanvas.width !== ref.width || state.compCanvas.height !== ref.height) {
+      state.compCanvas = document.createElement('canvas');
+      state.compCanvas.width = ref.width;
+      state.compCanvas.height = ref.height;
+    }
+    const ctx = state.compCanvas.getContext('2d');
+    ctx.clearRect(0, 0, ref.width, ref.height);
+    for (const l of state.layers) {
+      if (l.visible) ctx.drawImage(l.canvas, 0, 0);
+    }
+    return state.compCanvas;
+  }
+
+  function getComposite() {
+    return state.compCanvas || buildComposite();
+  }
+
+  // 畫面上看到的顏色：由上往下找第一個顯示中、不透明的像素
+  function getCompPixelInt(sx, sy) {
+    if (!state.layers.length) return getSheetPixelInt(sx, sy);
+    const ref = state.layers[0].canvas;
+    if (sx < 0 || sy < 0 || sx >= ref.width || sy >= ref.height) return 0;
+    for (let i = state.layers.length - 1; i >= 0; i--) {
+      const l = state.layers[i];
+      if (!l.visible) continue;
+      const d = l.ctx.getImageData(sx, sy, 1, 1).data;
+      const c = rgbaToInt(d[0], d[1], d[2], d[3]);
+      if (c !== 0) return c;
+    }
+    return 0;
+  }
+
+  // 暫時把某一層當成目前圖層來跑既有的格子讀寫函式
+  function withLayerCtx(lay, fn) {
+    const pc = state.pxCanvas;
+    const px = state.pxCtx;
+    state.pxCanvas = lay.canvas;
+    state.pxCtx = lay.ctx;
+    try {
+      return fn();
+    } finally {
+      state.pxCanvas = pc;
+      state.pxCtx = px;
+    }
+  }
+
+  let layerRenamingId = null;
+  let layerPopMode = 'normal'; // 'normal' | 'move'（選「移到圖層」的目標）
+
+  function addLayer() {
+    if (!state.hasProject) return;
+    if (state.layers.length >= MAX_LAYERS) {
+      showToast(`最多 ${MAX_LAYERS} 層`);
+      return;
+    }
+    if (state.floating) commitFloating();
+    let n = state.layers.length + 1;
+    while (state.layers.some(l => l.name === `圖層 ${n}`)) n++;
+    const lay = makeLayer(`圖層 ${n}`);
+    const idx = state.layers.findIndex(l => l.id === state.activeLayerId);
+    state.layers.splice(idx + 1, 0, lay);
+    layerRenamingId = lay.id;
+    setActiveLayer(lay.id, false);
+    scheduleSave();
+  }
+
+  function removeLayerAt(index) {
+    const [lay] = state.layers.splice(index, 1);
+    if (lay.id === state.activeLayerId) {
+      const next = state.layers[Math.max(0, index - 1)];
+      setActiveLayer(next.id, false);
+    } else {
+      updateLayerUI();
+      requestRender();
+    }
+  }
+
+  function deleteLayer(id) {
+    if (state.layers.length <= 1) {
+      showToast('至少要留一層');
+      return;
+    }
+    if (state.floating) commitFloating();
+    const index = state.layers.findIndex(l => l.id === id);
+    if (index === -1) return;
+    const step = [];
+    step.kind = 'layerDelete';
+    step.layer = state.layers[index];
+    step.index = index;
+    removeLayerAt(index);
+    pushHistory(step);
+    showToast(`已刪除「${step.layer.name}」（上一步可復原）`);
+  }
+
+  function moveLayerOrder(id, dir) {
+    const i = state.layers.findIndex(l => l.id === id);
+    const j = i + dir;
+    if (i === -1 || j < 0 || j >= state.layers.length) return;
+    const tmp = state.layers[i];
+    state.layers[i] = state.layers[j];
+    state.layers[j] = tmp;
+    updateLayerUI();
+    requestRender();
+    scheduleSave();
+  }
+
+  // 把圈選範圍內目前圖層的像素搬到另一層：覆蓋目標層同位置，原層清掉
+  function moveSelectionToLayer(targetId) {
+    const src = getActiveLayer();
+    const dst = getLayer(targetId);
+    if (!src || !dst || src === dst) return;
+    if (state.floating) commitFloating();
+    if (!state.selection) {
+      showToast('先圈選要搬的範圍');
+      return;
+    }
+    if (!canEditActiveLayer()) return;
+    if (dst.locked) {
+      showToast(`「${dst.name}」已鎖定`);
+      return;
+    }
+    const { sx, sy, w, h } = getCellBounds();
+    const sel = state.selection;
+    const x0 = Math.max(0, sel.x);
+    const y0 = Math.max(0, sel.y);
+    const x1 = Math.min(w, sel.x + sel.w);
+    const y1 = Math.min(h, sel.y + sel.h);
+    if (x1 <= x0 || y1 <= y0) return;
+    const rw = x1 - x0;
+    const rh = y1 - y0;
+    const sImg = src.ctx.getImageData(sx + x0, sy + y0, rw, rh);
+    const dImg = dst.ctx.getImageData(sx + x0, sy + y0, rw, rh);
+    const sd = sImg.data;
+    const dd = dImg.data;
+    const changes = [];
+    for (let i = 0; i < rw * rh; i++) {
+      const c = rgbaToInt(sd[i * 4], sd[i * 4 + 1], sd[i * 4 + 2], sd[i * 4 + 3]);
+      if (c === 0) continue;
+      const before = rgbaToInt(dd[i * 4], dd[i * 4 + 1], dd[i * 4 + 2], dd[i * 4 + 3]);
+      const x = sx + x0 + (i % rw);
+      const y = sy + y0 + Math.floor(i / rw);
+      changes.push({ x, y, before: c, after: 0, l: src.id });
+      if (before !== c) changes.push({ x, y, before, after: c, l: dst.id });
+      dd[i * 4] = c & 0xff;
+      dd[i * 4 + 1] = (c >>> 8) & 0xff;
+      dd[i * 4 + 2] = (c >>> 16) & 0xff;
+      dd[i * 4 + 3] = 255;
+      sd[i * 4] = 0;
+      sd[i * 4 + 1] = 0;
+      sd[i * 4 + 2] = 0;
+      sd[i * 4 + 3] = 0;
+    }
+    if (changes.length === 0) {
+      showToast('圈選範圍在這層沒有像素');
+      return;
+    }
+    src.ctx.putImageData(sImg, sx + x0, sy + y0);
+    dst.ctx.putImageData(dImg, sx + x0, sy + y0);
+    changes.layerId = src.id;
+    pushHistory(changes);
+    showToast(`已搬到「${dst.name}」${dst.visible ? '' : '（那層目前隱藏）'}`);
+    requestRender();
+  }
+
   // --- 像素讀寫與鏡像 ---
   function getSheetPixelInt(sx, sy) {
     if (!state.pxCtx || sx < 0 || sy < 0 || sx >= state.pxCanvas.width || sy >= state.pxCanvas.height) return 0;
@@ -1500,7 +1881,8 @@ input[type="file"] {
 
   // --- 歷史紀錄 ---
   function pushHistory(changes) {
-    if (!changes || changes.length === 0) return;
+    if (!changes || (changes.length === 0 && !changes.kind)) return;
+    if (!changes.layerId) changes.layerId = state.activeLayerId;
     state.undoStack.push(changes);
     if (state.undoStack.length > MAX_HISTORY) {
       state.undoStack.shift();
@@ -1513,17 +1895,38 @@ input[type="file"] {
   }
 
   function applyHistoryStep(changes, isUndo) {
+    if (changes.kind === 'layerDelete') {
+      if (isUndo) {
+        state.layers.splice(Math.min(changes.index, state.layers.length), 0, changes.layer);
+        setActiveLayer(changes.layer.id, false);
+      } else {
+        const i = state.layers.indexOf(changes.layer);
+        if (i !== -1) removeLayerAt(i);
+      }
+      state.lastSwatchPaint = null;
+      updateHistoryUI();
+      refreshUsedColors();
+      requestRender();
+      scheduleSave();
+      return;
+    }
     if (!state.pxCtx || !changes.length) return;
     for (const ch of changes) {
       const c = isUndo ? ch.before : ch.after;
-      const img = state.pxCtx.createImageData(1, 1);
+      const lay = getLayer(ch.l || changes.layerId);
+      const ctx = lay ? lay.ctx : state.pxCtx;
+      const img = ctx.createImageData(1, 1);
       if (c !== 0) {
         img.data[0] = c & 0xff;
         img.data[1] = (c >>> 8) & 0xff;
         img.data[2] = (c >>> 16) & 0xff;
         img.data[3] = 255;
       }
-      state.pxCtx.putImageData(img, ch.x, ch.y);
+      ctx.putImageData(img, ch.x, ch.y);
+    }
+    // 退回哪一層的動作，就切到那一層，看得到改了什麼
+    if (changes.layerId && changes.layerId !== state.activeLayerId && getLayer(changes.layerId)) {
+      setActiveLayer(changes.layerId, false);
     }
     const last = changes[changes.length - 1];
     const targetCol = Math.floor(last.x / state.cellSize);
@@ -1564,6 +1967,7 @@ input[type="file"] {
   // --- 浮起（Floating）機制 ---
   function startFloatingFromSelection(defaultFullCell = true) {
     if (!state.hasProject || state.floating) return;
+    if (!canEditActiveLayer()) return;
     const { w, h } = getCellBounds();
     const sel = state.selection ? { ...state.selection } : (defaultFullCell ? { x: 0, y: 0, w, h } : null);
     if (!sel) return;
@@ -1686,6 +2090,7 @@ input[type="file"] {
   // --- 繪圖與工具演算法 ---
   function paintAtCellPoint(cx, cy, colorHex, recordMap = null) {
     if (!state.hasProject) return [];
+    if (!canEditActiveLayer()) return [];
     const { sx, sy, w, h } = getCellBounds();
     if (cx < 0 || cx >= w || cy < 0 || cy >= h) return [];
     const targetInt = hexToInt(colorHex);
@@ -1804,6 +2209,11 @@ input[type="file"] {
 
   function applyCircle(p1, p2) {
     if (!state.hasProject) return;
+    if (!canEditActiveLayer()) {
+      state.circleStart = null;
+      requestRender();
+      return;
+    }
     const { sx, sy } = getCellBounds();
     const { points } = computeCirclePoints(p1, p2);
     const targetInt = hexToInt(state.penColor);
@@ -1832,6 +2242,7 @@ input[type="file"] {
 
   function applyBucket(cx, cy) {
     if (!state.hasProject) return;
+    if (!canEditActiveLayer()) return;
     const { sx, sy, w, h } = getCellBounds();
     if (cx < 0 || cx >= w || cy < 0 || cy >= h) return;
 
@@ -2372,6 +2783,7 @@ input[type="file"] {
   // --- 還原參考色、翻轉、置中 ---
   function restoreFromRef() {
     if (!state.hasProject) return;
+    if (!canEditActiveLayer()) return;
     if (state.floating) commitFloating();
     if (prefs.refMode === 'hi' && !state.hiCanvas) {
       showToast('沒有原圖可參考');
@@ -2502,47 +2914,54 @@ input[type="file"] {
     switchToCell(nextIdx % state.cols, Math.floor(nextIdx / state.cols));
   }
 
-  function copyEntireCellTo(srcCol, srcRow, dstCol, dstRow, mode) {
+  function copyEntireCellTo(srcCol, srcRow, dstCol, dstRow, mode, allLayers = true) {
     if (!state.hasProject) return;
     if (state.floating) commitFloating();
     if (srcCol === dstCol && srcRow === dstRow && mode === 'normal') {
       showToast('來源與目標相同，無需複製');
       return;
     }
+    if (!allLayers && !canEditActiveLayer()) return;
+    const targets = allLayers ? state.layers.filter(l => !l.locked) : [getActiveLayer()];
+    const skipped = allLayers ? state.layers.length - targets.length : 0;
     const srcB = getCellBounds(srcCol, srcRow);
     const dstB = getCellBounds(dstCol, dstRow);
-    const srcSnap = getCellSnapshot(srcCol, srcRow);
-    const dstOrig = getCellSnapshot(dstCol, dstRow);
-    const dstNext = new Uint32Array(dstB.w * dstB.h);
-
-    for (let y = 0; y < dstB.h; y++) {
-      for (let x = 0; x < dstB.w; x++) {
-        const sx = mode === 'fliph' ? (srcB.w - 1 - x) : x;
-        const sy = mode === 'flipv' ? (srcB.h - 1 - y) : y;
-        if (sx >= 0 && sx < srcB.w && sy >= 0 && sy < srcB.h) {
-          dstNext[y * dstB.w + x] = srcSnap[sy * srcB.w + sx];
-        }
-      }
-    }
-
-    putCellSnapshot(dstNext, dstCol, dstRow);
     const changes = [];
-    for (let y = 0; y < dstB.h; y++) {
-      for (let x = 0; x < dstB.w; x++) {
-        const idx = y * dstB.w + x;
-        if (dstOrig[idx] !== dstNext[idx]) {
-          changes.push({
-            x: dstB.sx + x,
-            y: dstB.sy + y,
-            before: dstOrig[idx],
-            after: dstNext[idx]
-          });
+
+    for (const lay of targets) {
+      withLayerCtx(lay, () => {
+        const srcSnap = getCellSnapshot(srcCol, srcRow);
+        const dstOrig = getCellSnapshot(dstCol, dstRow);
+        const dstNext = new Uint32Array(dstB.w * dstB.h);
+        for (let y = 0; y < dstB.h; y++) {
+          for (let x = 0; x < dstB.w; x++) {
+            const sx = mode === 'fliph' ? (srcB.w - 1 - x) : x;
+            const sy = mode === 'flipv' ? (srcB.h - 1 - y) : y;
+            if (sx >= 0 && sx < srcB.w && sy >= 0 && sy < srcB.h) {
+              dstNext[y * dstB.w + x] = srcSnap[sy * srcB.w + sx];
+            }
+          }
         }
-      }
+        putCellSnapshot(dstNext, dstCol, dstRow);
+        for (let y = 0; y < dstB.h; y++) {
+          for (let x = 0; x < dstB.w; x++) {
+            const idx = y * dstB.w + x;
+            if (dstOrig[idx] !== dstNext[idx]) {
+              changes.push({
+                x: dstB.sx + x,
+                y: dstB.sy + y,
+                before: dstOrig[idx],
+                after: dstNext[idx],
+                l: lay.id
+              });
+            }
+          }
+        }
+      });
     }
     if (changes.length > 0) pushHistory(changes);
     switchToCell(dstCol, dstRow, false);
-    showToast(`已複製到 ${dstRow + 1}-${dstCol + 1}（一步可復原）`);
+    showToast(`已複製到 ${dstRow + 1}-${dstCol + 1}（一步可復原）${skipped ? `，略過 ${skipped} 個鎖定圖層` : ''}`);
     closeMenu();
   }
 
@@ -2561,7 +2980,7 @@ input[type="file"] {
     let curHex = '透明';
     if (state.hasProject) {
       const { sx, sy } = getCellBounds();
-      const cInt = getSheetPixelInt(sx + state.curX, sy + state.curY);
+      const cInt = getCompPixelInt(sx + state.curX, sy + state.curY);
       if (cInt !== 0) curHex = intToHex(cInt);
     }
     document.getElementById('top-info-text').textContent = `筆 ${penStr}｜(${state.curX},${state.curY}) ${curHex}`;
@@ -2662,6 +3081,7 @@ input[type="file"] {
     // 顯示偏好與空狀態
     document.getElementById('vpad-left').classList.toggle('hidden', !prefs.showVpad);
     document.getElementById('vpad-right').classList.toggle('hidden', !prefs.showVpad);
+    updateLayerUI();
     document.getElementById('mini-preview-box').classList.toggle('hidden', !prefs.showMiniPrev);
     document.getElementById('mini-show').classList.toggle('hidden', prefs.showMiniPrev || !state.hasProject);
     document.getElementById('mini-body').classList.toggle('swapped', !!prefs.miniSwap);
@@ -2858,6 +3278,7 @@ input[type="file"] {
   function renderAll() {
     renderPending = false;
     document.getElementById('px-reset-view').classList.toggle('hidden', !state.hasProject || isViewAtHome());
+    const comp = state.hasProject ? buildComposite() : null;
     const mRef = getViewMetrics(refCv);
     const mPx = getViewMetrics(pxCv);
 
@@ -2891,7 +3312,7 @@ input[type="file"] {
         const tb = getCellBounds(info.col, info.row);
         refCtx.imageSmoothingEnabled = false;
         refCtx.drawImage(
-          state.pxCanvas,
+          comp,
           tb.sx, tb.sy, tb.w, tb.h,
           mRef.originX, mRef.originY, tb.w * mRef.scale, tb.h * mRef.scale
         );
@@ -2909,11 +3330,21 @@ input[type="file"] {
       const { sx, sy, w, h } = getCellBounds();
       fillCanvasBackground(pxViewCtx, mPx.originX, mPx.originY, w * mPx.scale, h * mPx.scale, 8);
       pxViewCtx.imageSmoothingEnabled = false;
-      pxViewCtx.drawImage(
-        state.pxCanvas,
-        sx, sy, w, h,
-        mPx.originX, mPx.originY, w * mPx.scale, h * mPx.scale
-      );
+      if (prefs.layerDim && state.layers.length > 1) {
+        // 其他圖層變淡：目前圖層照常，其他顯示中的圖層 30%
+        for (const l of state.layers) {
+          if (!l.visible) continue;
+          pxViewCtx.globalAlpha = l.id === state.activeLayerId ? 1 : 0.3;
+          pxViewCtx.drawImage(l.canvas, sx, sy, w, h, mPx.originX, mPx.originY, w * mPx.scale, h * mPx.scale);
+        }
+        pxViewCtx.globalAlpha = 1;
+      } else {
+        pxViewCtx.drawImage(
+          comp,
+          sx, sy, w, h,
+          mPx.originX, mPx.originY, w * mPx.scale, h * mPx.scale
+        );
+      }
       drawOverlays(pxViewCtx, mPx, false);
     }
     pxViewCtx.restore();
@@ -2948,14 +3379,15 @@ input[type="file"] {
     const ctx1 = cv1.getContext('2d');
     fillCanvasBackground(ctx1, 0, 0, w, h, 4);
     ctx1.imageSmoothingEnabled = false;
-    ctx1.drawImage(state.pxCanvas, sx, sy, w, h, 0, 0, w, h);
+    const comp = getComposite();
+    ctx1.drawImage(comp, sx, sy, w, h, 0, 0, w, h);
 
     const animCol = prefs.fps === 0 ? state.cellCol : (state.animFrame % state.cols);
     const ab = getCellBounds(animCol, state.cellRow);
     const ctx2 = cv2.getContext('2d');
     fillCanvasBackground(ctx2, 0, 0, w * 2, h * 2, 8);
     ctx2.imageSmoothingEnabled = false;
-    ctx2.drawImage(state.pxCanvas, ab.sx, ab.sy, ab.w, ab.h, 0, 0, ab.w * 2, ab.h * 2);
+    ctx2.drawImage(comp, ab.sx, ab.sy, ab.w, ab.h, 0, 0, ab.w * 2, ab.h * 2);
   }
 
   function renderFullSheetPreview() {
@@ -2975,12 +3407,13 @@ input[type="file"] {
     const ctx1 = cv1.getContext('2d');
     fillCanvasBackground(ctx1, 0, 0, sw, sh, 6);
     ctx1.imageSmoothingEnabled = false;
-    ctx1.drawImage(state.pxCanvas, 0, 0);
+    const comp = buildComposite();
+    ctx1.drawImage(comp, 0, 0);
 
     const ctx2 = cv2.getContext('2d');
     fillCanvasBackground(ctx2, 0, 0, sw * 2, sh * 2, 12);
     ctx2.imageSmoothingEnabled = false;
-    ctx2.drawImage(state.pxCanvas, 0, 0, sw, sh, 0, 0, sw * 2, sh * 2);
+    ctx2.drawImage(comp, 0, 0, sw, sh, 0, 0, sw * 2, sh * 2);
   }
 
   // 動畫計時循環
@@ -3175,6 +3608,7 @@ input[type="file"] {
     canvas.addEventListener('touchstart', (e) => {
       e.preventDefault();
       closeToolPopover();
+      closeLayerPop();
       if (!state.hasProject) return;
 
       const tCount = e.touches.length;
@@ -3205,9 +3639,13 @@ input[type="file"] {
 
         if (state.floating || state.selection) {
           if (!state.floating) startFloatingFromSelection(false);
-          gesture.threeMode = 'float';
-          gesture.threeOrigFloatX = state.floating.x;
-          gesture.threeOrigFloatY = state.floating.y;
+          if (state.floating) {
+            gesture.threeMode = 'float';
+            gesture.threeOrigFloatX = state.floating.x;
+            gesture.threeOrigFloatY = state.floating.y;
+          } else {
+            gesture.threeMode = 'none';
+          }
         } else if (state.mirrorMode !== 'off') {
           gesture.threeMode = 'mirror';
           gesture.threeOrigMirrorX = state.mirrorX;
@@ -3301,6 +3739,7 @@ input[type="file"] {
     canvas.addEventListener('mousedown', (e) => {
       if (e.button !== 0) return;
       closeToolPopover();
+      closeLayerPop();
       mouseDown = true;
       onSingleStart(canvas, isRef, e.clientX, e.clientY);
     });
@@ -3460,7 +3899,7 @@ input[type="file"] {
       grabEl.classList.remove('holding');
       grabMeter.classList.remove('show');
       startFloatingFromSelection(true);
-      showToast('抓住了：用十字鍵移動，再按『放下』寫入');
+      if (state.floating) showToast('抓住了：用十字鍵移動，再按『放下』寫入');
     }, GRAB_HOLD_MS);
   };
   const cancelGrabHold = () => {
@@ -3482,7 +3921,7 @@ input[type="file"] {
   function pickCursorColor() {
     if (!state.hasProject) return;
     const { sx, sy } = getCellBounds();
-    const cInt = getSheetPixelInt(sx + state.curX, sy + state.curY);
+    const cInt = getCompPixelInt(sx + state.curX, sy + state.curY);
     if (cInt === 0) {
       state.penColor = null;
       showToast('吸到透明');
@@ -3568,6 +4007,155 @@ input[type="file"] {
   function closeToolPopover() {
     toolPopover.classList.add('hidden');
   }
+
+  // --- 圖層面板 ---
+  // 用函式取元素：updateUIState 可能在這段宣告執行前就被呼叫
+  function layerPopEl() {
+    return document.getElementById('layer-pop');
+  }
+
+  function updateLayerUI() {
+    const btn = document.getElementById('layer-btn');
+    btn.classList.toggle('hidden', !state.hasProject);
+    const act = getActiveLayer();
+    const flag = act ? (act.locked ? ' 🔒' : '') + (act.visible ? '' : ' 隱') : '';
+    btn.textContent = `圖層：${act ? act.name : '—'}${flag} ▾`;
+    if (!state.hasProject) layerPopEl().classList.add('hidden');
+    if (!layerPopEl().classList.contains('hidden')) renderLayerList();
+  }
+
+  function openLayerPop(mode) {
+    if (!state.hasProject) return;
+    layerPopMode = mode;
+    layerRenamingId = null;
+    layerPopEl().classList.remove('hidden');
+    renderLayerList();
+  }
+
+  function closeLayerPop() {
+    layerPopEl().classList.add('hidden');
+    layerRenamingId = null;
+    layerPopMode = 'normal';
+  }
+
+  function makeLayerBtn(label, aria, onClick, disabled = false) {
+    const b = document.createElement('button');
+    b.textContent = label;
+    b.setAttribute('aria-label', aria);
+    b.disabled = disabled;
+    b.addEventListener('click', onClick);
+    return b;
+  }
+
+  function renderLayerList() {
+    const isMove = layerPopMode === 'move';
+    document.getElementById('layer-pop-title').textContent = isMove
+      ? '搬到哪一層？'
+      : `圖層 ${state.layers.length}/${MAX_LAYERS}`;
+    document.getElementById('layer-add').style.display = isMove ? 'none' : '';
+    const dimBtn = document.getElementById('layer-dim');
+    dimBtn.style.display = isMove ? 'none' : '';
+    dimBtn.textContent = `其他變淡：${prefs.layerDim ? '開' : '關'}`;
+
+    const list = document.getElementById('layer-list');
+    list.innerHTML = '';
+    let focusInput = null;
+    for (let i = state.layers.length - 1; i >= 0; i--) {
+      const lay = state.layers[i];
+      const isActive = lay.id === state.activeLayerId;
+      const row = document.createElement('div');
+      row.className = 'layer-row' + (isActive ? ' active' : '') + (lay.visible ? '' : ' off');
+
+      if (!isMove) {
+        row.appendChild(makeLayerBtn(lay.visible ? '◉' : '○', lay.visible ? '隱藏這層' : '顯示這層', () => {
+          lay.visible = !lay.visible;
+          updateLayerUI();
+          requestRender();
+          scheduleSave();
+        }));
+      }
+
+      if (layerRenamingId === lay.id && !isMove) {
+        const inp = document.createElement('input');
+        inp.type = 'text';
+        inp.value = lay.name;
+        inp.maxLength = 20;
+        inp.setAttribute('aria-label', '圖層名稱');
+        let done = false;
+        const commit = () => {
+          if (done) return;
+          done = true;
+          lay.name = inp.value.trim() || lay.name;
+          layerRenamingId = null;
+          updateLayerUI();
+          scheduleSave();
+        };
+        inp.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter') inp.blur();
+        });
+        inp.addEventListener('blur', commit);
+        row.appendChild(inp);
+        focusInput = inp;
+      } else {
+        const nameBtn = makeLayerBtn(lay.name + (isMove && isActive ? '（目前）' : ''), `選擇圖層 ${lay.name}`, () => {
+          if (isMove) {
+            closeLayerPop();
+            moveSelectionToLayer(lay.id);
+          } else {
+            setActiveLayer(lay.id);
+          }
+        }, isMove && isActive);
+        nameBtn.className = 'layer-name';
+        row.appendChild(nameBtn);
+      }
+
+      if (!isMove) {
+        row.appendChild(makeLayerBtn(lay.locked ? '🔒' : '🔓', lay.locked ? '解除鎖定' : '鎖定這層', () => {
+          lay.locked = !lay.locked;
+          updateLayerUI();
+          scheduleSave();
+        }));
+        row.appendChild(makeLayerBtn('▲', '往上移', () => moveLayerOrder(lay.id, 1), i === state.layers.length - 1));
+        row.appendChild(makeLayerBtn('▼', '往下移', () => moveLayerOrder(lay.id, -1), i === 0));
+        row.appendChild(makeLayerBtn('✎', '改名', () => {
+          layerRenamingId = lay.id;
+          renderLayerList();
+        }));
+        row.appendChild(makeLayerBtn('🗑', '刪除這層', () => deleteLayer(lay.id), state.layers.length <= 1));
+      }
+      list.appendChild(row);
+    }
+    if (focusInput) {
+      focusInput.focus();
+      focusInput.select();
+    }
+  }
+
+  document.getElementById('layer-btn').addEventListener('click', () => {
+    closeToolPopover();
+    if (!layerPopEl().classList.contains('hidden') && layerPopMode === 'normal') closeLayerPop();
+    else openLayerPop('normal');
+  });
+  document.getElementById('layer-close').addEventListener('click', closeLayerPop);
+  document.getElementById('layer-add').addEventListener('click', addLayer);
+  document.getElementById('layer-dim').addEventListener('click', () => {
+    prefs.layerDim = !prefs.layerDim;
+    savePrefs();
+    renderLayerList();
+    requestRender();
+  });
+  document.getElementById('act-move-layer').addEventListener('click', () => {
+    if (!state.hasProject) return;
+    if (!state.selection && !state.floating) {
+      showToast('先圈選要搬的範圍');
+      return;
+    }
+    if (state.layers.length < 2) {
+      showToast('只有一層：先在「圖層」新增一層');
+      return;
+    }
+    openLayerPop('move');
+  });
 
   vkToolBtn.addEventListener('click', () => {
     const isHidden = toolPopover.classList.contains('hidden');
@@ -3772,6 +4360,7 @@ input[type="file"] {
       showToast('請先圈選範圍');
       return;
     }
+    if (!canEditActiveLayer()) return;
     const { sx, sy, w, h } = getCellBounds();
     const snap = getCellSnapshot();
     const orig = new Uint32Array(snap);
@@ -3844,6 +4433,7 @@ input[type="file"] {
       return;
     }
     if (state.floating) commitFloating();
+    if (!canEditActiveLayer()) return;
     const origSnap = getCellSnapshot();
     const cb = state.clipboard;
     state.selection = { x: cb.x, y: cb.y, w: cb.w, h: cb.h };
@@ -3941,7 +4531,8 @@ input[type="file"] {
     const [sc, sr] = document.getElementById('sel-copy-src').value.split(',').map(Number);
     const [dc, dr] = document.getElementById('sel-copy-dst').value.split(',').map(Number);
     const mode = document.getElementById('sel-copy-mode').value;
-    copyEntireCellTo(sc, sr, dc, dr, mode);
+    const allLayers = document.getElementById('sel-copy-layers').value === 'all';
+    copyEntireCellTo(sc, sr, dc, dr, mode, allLayers);
   });
 
   async function refreshProjectListUI() {
@@ -4034,6 +4625,9 @@ input[type="file"] {
     state.pxCanvas = null;
     state.pxCtx = null;
     state.baseCanvas = null;
+    state.layers = [];
+    state.activeLayerId = null;
+    state.compCanvas = null;
     state.undoStack = [];
     state.redoStack = [];
     state.selection = null;
@@ -4057,8 +4651,7 @@ input[type="file"] {
       state.projName = rec.name || '未命名專案';
       state.cellSize = Math.max(4, Math.min(512, Number(rec.cell) || 32));
       state.hiCanvas = hiCv;
-      state.pxCanvas = pxCvLoaded;
-      state.pxCtx = pxCvLoaded.getContext('2d');
+      await restoreLayers(rec.layers, pxCvLoaded, rec.activeLayerId, 'png');
       state.baseCanvas = baseCv;
       state.recents = Array.isArray(rec.recents) && rec.recents.length ? rec.recents.slice(0, 10) : ['#000000', '#ffffff'];
       state.hasProject = true;
@@ -4156,8 +4749,7 @@ input[type="file"] {
 
     state.cellSize = cellSz;
     state.hiCanvas = hiCv;
-    state.pxCanvas = pxCvNew;
-    state.pxCtx = pxCvNew.getContext('2d');
+    initSingleLayer(pxCvNew);
     state.baseCanvas = baseCv;
     state.hasProject = true;
 
@@ -4248,10 +4840,45 @@ input[type="file"] {
       return;
     }
     await saveCurrentProjectNow(true);
-    const blob = await canvasToBlob(state.pxCanvas);
+    const blob = await canvasToBlob(buildComposite());
     if (!blob) return;
     const fname = `${sanitizeFileName(state.projName)}.png`;
     await shareOrDownloadBlob(blob, fname);
+  });
+
+  // 分層匯出：每層一張 PNG，能一次分享就一次分享，否則逐張下載
+  document.getElementById('btn-export-layers').addEventListener('click', async () => {
+    if (!state.hasProject || !state.layers.length) {
+      showToast('目前沒有可匯出的圖層');
+      return;
+    }
+    await saveCurrentProjectNow(true);
+    const base = sanitizeFileName(state.projName);
+    const files = [];
+    for (let i = 0; i < state.layers.length; i++) {
+      const l = state.layers[i];
+      const blob = await canvasToBlob(l.canvas);
+      if (!blob) continue;
+      files.push(new File([blob], `${base}_${String(i + 1).padStart(2, '0')}_${sanitizeFileName(l.name)}.png`, { type: 'image/png' }));
+    }
+    if (navigator.canShare && navigator.canShare({ files })) {
+      try {
+        await navigator.share({ files, title: base });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    for (const f of files) {
+      const url = URL.createObjectURL(f);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = f.name;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 3000);
+    }
   });
 
   document.getElementById('btn-export-proj').addEventListener('click', async () => {
@@ -4265,7 +4892,13 @@ input[type="file"] {
       cell: state.cellSize,
       recents: state.recents,
       hiDataUrl: state.hiCanvas ? state.hiCanvas.toDataURL('image/png') : null,
-      pxDataUrl: state.pxCanvas.toDataURL('image/png'),
+      pxDataUrl: buildComposite().toDataURL('image/png'),
+      layers: state.layers.map(l => ({
+        name: l.name,
+        visible: l.visible,
+        locked: l.locked,
+        dataUrl: l.canvas.toDataURL('image/png')
+      })),
       baseDataUrl: state.baseCanvas ? state.baseCanvas.toDataURL('image/png') : null
     };
     const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
@@ -4293,8 +4926,7 @@ input[type="file"] {
       state.projName = data.name || '匯入專案';
       state.cellSize = Math.max(4, Math.min(512, Number(data.cell) || 32));
       state.hiCanvas = hiCv;
-      state.pxCanvas = pxCvLoaded;
-      state.pxCtx = pxCvLoaded.getContext('2d');
+      await restoreLayers(data.layers, pxCvLoaded, null, 'dataUrl');
       state.baseCanvas = baseCv;
       state.recents = Array.isArray(data.recents) ? data.recents.slice(0, 10) : ['#000000', '#ffffff'];
       state.hasProject = true;
