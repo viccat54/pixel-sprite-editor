@@ -2409,7 +2409,7 @@ input[type="file"] {
     ctx.strokeRect(originX, originY, cellW * scale, cellH * scale);
 
     // 像素畫布格線（縮放 >= 6）
-    if (!isRefCanvas && prefs.showGrid && state.zoom >= 6) {
+    if (!isRefCanvas && prefs.showGrid && m.scale >= 5) {
       ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
       ctx.lineWidth = 1;
       ctx.beginPath();
@@ -3123,7 +3123,7 @@ input[type="file"] {
   };
   grabEl.addEventListener('touchstart', startGrabHold, { passive: false });
   grabEl.addEventListener('touchend', cancelGrabHold);
-  grabEl.addEventListener('touchcancel', stopGrabHold);
+  grabEl.addEventListener('contextmenu', (e) => e.preventDefault());
   grabEl.addEventListener('mousedown', (e) => { if (e.button === 0) startGrabHold(e); });
   grabEl.addEventListener('mouseup', cancelGrabHold);
   grabEl.addEventListener('mouseleave', stopGrabHold);
