@@ -387,6 +387,19 @@ button.danger {
   background: var(--accent);
   color: var(--accent-fg);
 }
+#vpad-left .vk-diag {
+  font-size: 11px;
+  opacity: 0.85;
+}
+#vk-grab.holding {
+  background: linear-gradient(to top, var(--accent) 0 50%, var(--vpad-btn) 50% 100%);
+  background-size: 100% 200%;
+  background-position: 0 0;
+  animation: grab-fill 2s linear forwards;
+}
+@keyframes grab-fill {
+  to { background-position: 0 100%; }
+}
 #btn-big-action {
   grid-column: 1 / span 2;
   font-size: 14px;
@@ -626,32 +639,6 @@ input[type="file"] {
     <button id="btn-open-menu" aria-label="選單">☰</button>
   </header>
 
-  <!-- 2. 參考畫布 -->
-  <section id="ref-pane" class="canvas-pane">
-    <canvas id="ref-cv" class="main-cv"></canvas>
-    <button id="ref-mode-btn" class="stop-touch" aria-label="切換參考模式">參考：原圖</button>
-    <div id="mini-preview-box" class="stop-touch" role="button" aria-label="切換小預覽動畫速度">
-      <span id="mini-fps-tag">8fps</span>
-      <canvas id="mini-cv-1x" width="32" height="32"></canvas>
-      <canvas id="mini-cv-2x" width="64" height="64"></canvas>
-    </div>
-  </section>
-
-  <!-- 3. 色條 A -->
-  <div id="bar-a" class="color-bar stop-touch" aria-label="參考圖取樣色條">
-    <button id="btn-sample-scope" aria-label="切換取色範圍">取色：本格</button>
-    <div id="bar-a-swatches" style="display:flex;gap:4px;align-items:center;"></div>
-  </div>
-
-  <!-- 4. 色條 B -->
-  <div id="bar-b" class="color-bar stop-touch" aria-label="最近與已用色條">
-    <span class="v-label">最近</span>
-    <div id="bar-b-recents" style="display:flex;gap:4px;align-items:center;"></div>
-    <span class="bar-sep"></span>
-    <span class="v-label">已用</span>
-    <div id="bar-b-used" style="display:flex;gap:4px;align-items:center;"></div>
-  </div>
-
   <!-- 5. 像素畫布 -->
   <section id="px-pane" class="canvas-pane">
     <canvas id="px-cv" class="main-cv"></canvas>
@@ -683,15 +670,15 @@ input[type="file"] {
 
     <!-- 左虛擬鍵：3x3 十字鍵 -->
     <div id="vpad-left" class="vpad-group stop-touch" aria-label="方向與抓取虛擬鍵">
-      <span></span>
+      <button id="vk-up-left" class="vk-diag" aria-label="游標向左上">◤</button>
       <button id="vk-up" aria-label="游標向上">▲</button>
-      <span></span>
+      <button id="vk-up-right" class="vk-diag" aria-label="游標向右上">◥</button>
       <button id="vk-left" aria-label="游標向左">◀</button>
       <button id="vk-grab" aria-label="抓或放下選取內容">抓</button>
       <button id="vk-right" aria-label="游標向右">▶</button>
-      <span></span>
+      <button id="vk-down-left" class="vk-diag" aria-label="游標向左下">◣</button>
       <button id="vk-down" aria-label="游標向下">▼</button>
-      <span></span>
+      <button id="vk-down-right" class="vk-diag" aria-label="游標向右下">◢</button>
     </div>
 
     <!-- 右虛擬鍵 -->
@@ -703,6 +690,34 @@ input[type="file"] {
       <button id="btn-big-action" class="primary" aria-label="主要塗色或確認動作">塗</button>
     </div>
   </section>
+
+  <!-- 3. 色條 A -->
+  <div id="bar-a" class="color-bar stop-touch" aria-label="參考圖取樣色條">
+    <button id="btn-sample-scope" aria-label="切換取色範圍">取色：本格</button>
+    <div id="bar-a-swatches" style="display:flex;gap:4px;align-items:center;"></div>
+  </div>
+
+  <!-- 4. 色條 B -->
+  <div id="bar-b" class="color-bar stop-touch" aria-label="最近與已用色條">
+    <span class="v-label">最近</span>
+    <div id="bar-b-recents" style="display:flex;gap:4px;align-items:center;"></div>
+    <span class="bar-sep"></span>
+    <span class="v-label">已用</span>
+    <div id="bar-b-used" style="display:flex;gap:4px;align-items:center;"></div>
+  </div>
+
+  <!-- 2. 參考畫布 -->
+  <section id="ref-pane" class="canvas-pane">
+    <canvas id="ref-cv" class="main-cv"></canvas>
+    <button id="ref-mode-btn" class="stop-touch" aria-label="切換參考模式">參考：原圖</button>
+    <div id="mini-preview-box" class="stop-touch" role="button" aria-label="切換小預覽動畫速度">
+      <span id="mini-fps-tag">8fps</span>
+      <canvas id="mini-cv-1x" width="32" height="32"></canvas>
+      <canvas id="mini-cv-2x" width="64" height="64"></canvas>
+    </div>
+  </section>
+
+
 </div>
 
 <!-- 工具選單浮層 -->
@@ -1203,6 +1218,8 @@ input[type="file"] {
     state.mirrorY = h / 2;
   }
 
+  const MIN_ZOOM = 0.25;
+
   function resetView() {
     const { w, h } = getCellBounds();
     state.zoom = 1;
@@ -1214,8 +1231,9 @@ input[type="file"] {
 
   function clampView() {
     const { w, h } = getCellBounds();
-    if (state.zoom <= 1.001) {
-      state.zoom = 1;
+    state.zoom = Math.max(MIN_ZOOM, Math.min(16, state.zoom));
+    if (Math.abs(state.zoom - 1) < 0.04) state.zoom = 1;
+    if (state.zoom <= 1) {
       state.panX = w / 2;
       state.panY = h / 2;
     } else {
@@ -2874,7 +2892,7 @@ input[type="file"] {
         const midX = (t0.clientX + t1.clientX) / 2;
         const midY = (t0.clientY + t1.clientY) / 2;
         const dist = Math.max(10, Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY));
-        const newZoom = Math.max(1, Math.min(16, gesture.pinchStartZoom * (dist / gesture.pinchStartDist)));
+        const newZoom = Math.max(MIN_ZOOM, Math.min(16, gesture.pinchStartZoom * (dist / gesture.pinchStartDist)));
         state.zoom = newZoom;
 
         const rect = canvas.getBoundingClientRect();
@@ -2961,7 +2979,7 @@ input[type="file"] {
       if (!state.hasProject) return;
       const cf = clientToCellFloat(canvas, e.clientX, e.clientY);
       const factor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
-      state.zoom = Math.max(1, Math.min(16, state.zoom * factor));
+      state.zoom = Math.max(MIN_ZOOM, Math.min(16, state.zoom * factor));
       const rect = canvas.getBoundingClientRect();
       const m = getViewMetrics(canvas);
       state.panX = cf.fx - (e.clientX - rect.left - m.cssW / 2) / m.scale;
@@ -3067,17 +3085,46 @@ input[type="file"] {
   bindDpadButton('vk-down', 0, 1);
   bindDpadButton('vk-left', -1, 0);
   bindDpadButton('vk-right', 1, 0);
+  bindDpadButton('vk-up-left', -1, -1);
+  bindDpadButton('vk-up-right', 1, -1);
+  bindDpadButton('vk-down-left', -1, 1);
+  bindDpadButton('vk-down-right', 1, 1);
 
   // 抓／放下
-  document.getElementById('vk-grab').addEventListener('click', () => {
+  // 抓起要按住 2 秒（避免誤觸），放下點一下就好；按住時按鈕會由下往上填滿
+  const GRAB_HOLD_MS = 2000;
+  const grabEl = document.getElementById('vk-grab');
+  let grabTimer = null;
+  const stopGrabHold = () => {
+    if (grabTimer) { clearTimeout(grabTimer); grabTimer = null; }
+    grabEl.classList.remove('holding');
+  };
+  const startGrabHold = (e) => {
+    e.preventDefault();
     if (!state.hasProject) return;
     if (state.floating) {
       commitFloating();
-    } else {
+      return;
+    }
+    stopGrabHold();
+    grabEl.classList.add('holding');
+    grabTimer = setTimeout(() => {
+      grabTimer = null;
+      grabEl.classList.remove('holding');
       startFloatingFromSelection(true);
       showToast('抓住了：用十字鍵移動，再按『放下』寫入');
-    }
-  });
+    }, GRAB_HOLD_MS);
+  };
+  const cancelGrabHold = () => {
+    if (grabTimer) showToast('按住「抓」2 秒才會抓起');
+    stopGrabHold();
+  };
+  grabEl.addEventListener('touchstart', startGrabHold, { passive: false });
+  grabEl.addEventListener('touchend', cancelGrabHold);
+  grabEl.addEventListener('touchcancel', stopGrabHold);
+  grabEl.addEventListener('mousedown', (e) => { if (e.button === 0) startGrabHold(e); });
+  grabEl.addEventListener('mouseup', cancelGrabHold);
+  grabEl.addEventListener('mouseleave', stopGrabHold);
 
   // 上一步／下一步
   document.getElementById('vk-undo').addEventListener('click', doUndo);
