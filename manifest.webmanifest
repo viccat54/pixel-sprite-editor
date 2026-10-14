@@ -1,0 +1,10 @@
+{
+  "name": "像素修圖台",
+  "short_name": "像素修圖台",
+  "description": "像素角色行走圖（Sprite Sheet）對照修整工具",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#111827",
+  "theme_color": "#1f2937"
+}

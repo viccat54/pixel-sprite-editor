@@ -1,1022 +1,3918 @@
 <!DOCTYPE html>
-<html lang="ja">
+<html lang="zh-Hant">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <title>PixelSprite Touch 128</title>
-  <style>
-    :root {
-      --bg-dark: #16181d;
-      --panel-bg: #22252d;
-      --border: #343946;
-      --accent: #3b82f6;
-      --accent-active: #2563eb;
-      --text: #f3f4f6;
-      --text-sub: #9ca3af;
-    }
-    * {
-      box-sizing: border-box;
-      -webkit-tap-highlight-color: transparent;
-      user-select: none;
-      -webkit-user-select: none;
-    }
-    body {
-      margin: 0;
-      padding: env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left);
-      background: var(--bg-dark);
-      color: var(--text);
-      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", sans-serif;
-      height: 100dvh;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-    }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="像素修圖台">
+<link rel="manifest" href="manifest.webmanifest">
+<title>像素修圖台</title>
+<style>
+:root {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --panel-alt: #e5e7eb;
+  --text: #111827;
+  --text-sub: #4b5563;
+  --border: #d1d5db;
+  --accent: #2563eb;
+  --accent-fg: #ffffff;
+  --danger: #dc2626;
+  --danger-fg: #ffffff;
+  --overlay-bg: rgba(255, 255, 255, 0.84);
+  --vpad-bg: rgba(255, 255, 255, 0.65);
+  --vpad-btn: rgba(243, 244, 246, 0.88);
+  --vpad-active: #bfdbfe;
+  --shadow: 0 2px 10px rgba(0, 0, 0, 0.14);
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #111827;
+    --panel: #1f2937;
+    --panel-alt: #374151;
+    --text: #f9fafb;
+    --text-sub: #9ca3af;
+    --border: #4b5563;
+    --accent: #3b82f6;
+    --accent-fg: #ffffff;
+    --danger: #ef4444;
+    --danger-fg: #ffffff;
+    --overlay-bg: rgba(31, 41, 55, 0.86);
+    --vpad-bg: rgba(17, 24, 39, 0.62);
+    --vpad-btn: rgba(55, 65, 81, 0.88);
+    --vpad-active: #1d4ed8;
+    --shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+  }
+}
+* {
+  box-sizing: border-box;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+input, select, textarea {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+html, body {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-size: 13px;
+  touch-action: none;
+}
+#app {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  padding-top: env(safe-area-inset-top);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+}
+button {
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 0 8px;
+  min-height: 34px;
+  min-width: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  white-space: nowrap;
+}
+button:active:not(:disabled) {
+  filter: brightness(0.92);
+}
+button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+button.active, button.primary {
+  background: var(--accent);
+  color: var(--accent-fg);
+  border-color: var(--accent);
+}
+button.danger {
+  background: var(--danger);
+  color: var(--danger-fg);
+  border-color: var(--danger);
+}
 
-    /* Top Header */
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 8px 12px;
-      background: var(--panel-bg);
-      border-bottom: 1px solid var(--border);
-      gap: 6px;
-      z-index: 10;
-    }
-    .btn {
-      background: #2f3441;
-      color: var(--text);
-      border: 1px solid var(--border);
-      padding: 7px 11px;
-      border-radius: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-      cursor: pointer;
-    }
-    .btn:active { background: #3f4656; }
-    .btn.primary { background: var(--accent); border-color: var(--accent); }
-    .btn.primary:active { background: var(--accent-active); }
-    .btn:disabled { opacity: 0.4; pointer-events: none; }
+/* 1. 頂列 */
+#topbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 40px;
+  padding: 0 6px;
+  background: var(--panel);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  z-index: 20;
+}
+#app-title {
+  font-weight: 700;
+  font-size: 14px;
+  margin-right: 4px;
+  white-space: nowrap;
+}
+@media (max-width: 430px) {
+  #app-title {
+    display: none;
+  }
+}
+#top-info {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex: 1;
+  min-width: 0;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 11px;
+  overflow: hidden;
+  white-space: nowrap;
+}
+.swatch-inline {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  flex-shrink: 0;
+  position: relative;
+  overflow: hidden;
+}
+.checker-bg {
+  background-image:
+    linear-gradient(45deg, #ccc 25%, transparent 25%),
+    linear-gradient(-45deg, #ccc 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, #ccc 75%),
+    linear-gradient(-45deg, transparent 75%, #ccc 75%);
+  background-size: 8px 8px;
+  background-position: 0 0, 0 4px, 4px -4px, -4px 0;
+  background-color: #fff;
+}
 
-    /* Collapsible Convert Settings Drawer */
-    #convertDrawer {
-      background: var(--panel-bg);
-      border-bottom: 1px solid var(--border);
-      padding: 10px 12px;
-      display: none;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 9;
-    }
-    #convertDrawer.open { display: flex; }
-    .setting-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 13px;
-      gap: 8px;
-    }
-    select, input[type="range"] {
-      background: #16181d;
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 6px 8px;
-      font-size: 13px;
-    }
+/* 畫布區共用 */
+.canvas-pane {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  width: 100%;
+  overflow: hidden;
+}
+.canvas-pane canvas.main-cv {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 
-    /* Main Canvas Viewport */
-    #viewport {
-      flex: 1;
-      position: relative;
-      overflow: hidden;
-      background: #111317;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      touch-action: none;
-    }
-    #canvasWrapper {
-      position: relative;
-      transform-origin: center center;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.6);
-      /* Checkerboard for transparency */
-      background-image:
-        linear-gradient(45deg, #2a2d35 25%, transparent 25%),
-        linear-gradient(-45deg, #2a2d35 25%, transparent 25%),
-        linear-gradient(45deg, transparent 75%, #2a2d35 75%),
-        linear-gradient(-45deg, transparent 75%, #2a2d35 75%);
-      background-size: 16px 16px;
-      background-position: 0 0, 0 8px, 8px -8px, -8px 0;
-      background-color: #1d1f26;
-    }
-    #spriteCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      image-rendering: pixelated;
-      image-rendering: crisp-edges;
-    }
-    #gridOverlay {
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      display: none;
-    }
-    #gridOverlay.visible { display: block; }
+/* 2. 參考畫布浮動控制 */
+#ref-mode-btn {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  z-index: 10;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  box-shadow: var(--shadow);
+  font-size: 12px;
+  padding: 0 10px;
+}
+#mini-preview-box {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 10;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px;
+  display: flex;
+  align-items: flex-end;
+  gap: 4px;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+#mini-preview-box.hidden {
+  display: none;
+}
+#mini-fps-tag {
+  position: absolute;
+  top: 2px;
+  left: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.6);
+  padding: 1px 4px;
+  border-radius: 3px;
+  pointer-events: none;
+}
+#mini-cv-1x, #mini-cv-2x {
+  display: block;
+  border: 1px solid rgba(255,255,255,0.35);
+  image-rendering: pixelated;
+}
 
-    /* Floating Status Badge */
-    #statusBadge {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: rgba(22, 24, 29, 0.8);
-      backdrop-filter: blur(4px);
-      padding: 4px 8px;
-      border-radius: 6px;
-      font-size: 11px;
-      color: var(--text-sub);
-      pointer-events: none;
-      border: 1px solid var(--border);
-    }
+/* 3 & 4. 色條 A / B */
+.color-bar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 38px;
+  padding: 0 6px;
+  background: var(--panel);
+  border-top: 1px solid var(--border);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  flex-shrink: 0;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+.color-bar::-webkit-scrollbar, #action-bar::-webkit-scrollbar {
+  display: none;
+}
+#bar-b {
+  border-top: none;
+}
+.v-label {
+  writing-mode: vertical-rl;
+  font-size: 10px;
+  line-height: 1;
+  color: var(--text-sub);
+  letter-spacing: 1px;
+  padding: 2px 0;
+  flex-shrink: 0;
+}
+.bar-sep {
+  width: 1px;
+  height: 24px;
+  background: var(--border);
+  margin: 0 2px;
+  flex-shrink: 0;
+}
+.swatch-btn {
+  width: 32px;
+  height: 30px;
+  min-width: 32px;
+  min-height: 30px;
+  padding: 0;
+  border-radius: 5px;
+  border: 1px solid var(--border);
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+.swatch-btn.selected {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-color: #fff;
+}
+.swatch-pct {
+  position: absolute;
+  right: 1px;
+  bottom: 0px;
+  font-size: 9px;
+  line-height: 1.1;
+  padding: 0 2px;
+  border-radius: 2px;
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  pointer-events: none;
+}
+.swatch-trans-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #111;
+  background: rgba(255, 255, 255, 0.78);
+  padding: 1px 2px;
+  border-radius: 2px;
+  pointer-events: none;
+}
 
-    /* Bottom Controls Area */
-    #bottomPanel {
-      background: var(--panel-bg);
-      border-top: 1px solid var(--border);
-      padding: 8px 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      z-index: 10;
-    }
+/* 5. 像素畫布與上方動作列、狀態列、虛擬鍵 */
+#action-bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 38px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0 6px;
+  background: var(--overlay-bg);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
+  overflow-y: hidden;
+  z-index: 12;
+  touch-action: pan-x;
+  -webkit-overflow-scrolling: touch;
+}
+#action-bar button {
+  min-height: 30px;
+  font-size: 12px;
+  padding: 0 8px;
+}
+#px-status {
+  position: absolute;
+  top: 42px;
+  left: 6px;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.58);
+  color: #fff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 11px;
+  pointer-events: none;
+  white-space: nowrap;
+}
+.vpad-group {
+  position: absolute;
+  bottom: 6px;
+  z-index: 14;
+  background: var(--vpad-bg);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  padding: 6px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  touch-action: none;
+}
+.vpad-group.hidden {
+  display: none;
+}
+#vpad-left {
+  left: 6px;
+  display: grid;
+  grid-template-columns: repeat(3, 42px);
+  grid-template-rows: repeat(3, 40px);
+  gap: 4px;
+}
+#vpad-left.hidden, #vpad-right.hidden {
+  display: none;
+}
+#vpad-right {
+  right: 6px;
+  display: grid;
+  grid-template-columns: repeat(2, 62px);
+  grid-template-rows: 36px 36px 44px;
+  gap: 4px;
+}
+.vpad-group button {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  padding: 0 4px;
+  background: var(--vpad-btn);
+  font-size: 12px;
+  font-weight: 600;
+}
+.vpad-group button.active {
+  background: var(--accent);
+  color: var(--accent-fg);
+}
+#btn-big-action {
+  grid-column: 1 / span 2;
+  font-size: 14px;
+  font-weight: 700;
+}
 
-    /* Palette Bar */
-    .palette-row {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    #colorPickerWrap {
-      position: relative;
-      width: 34px;
-      height: 34px;
-      border-radius: 8px;
-      border: 2px solid #fff;
-      overflow: hidden;
-      flex-shrink: 0;
-    }
-    #colorPicker {
-      position: absolute;
-      inset: -8px;
-      width: 50px;
-      height: 50px;
-      border: none;
-      padding: 0;
-      background: none;
-    }
-    #paletteSwatches {
-      display: flex;
-      gap: 6px;
-      overflow-x: auto;
-      padding-bottom: 2px;
-      scrollbar-width: none;
-    }
-    #paletteSwatches::-webkit-scrollbar { display: none; }
-    .swatch {
-      width: 28px;
-      height: 28px;
-      border-radius: 6px;
-      border: 1.5px solid var(--border);
-      flex-shrink: 0;
-    }
-    .swatch.active {
-      border-color: #fff;
-      transform: scale(1.1);
-    }
+/* 工具浮出選單 */
+#tool-popover {
+  position: fixed;
+  z-index: 40;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  padding: 6px;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  min-width: 210px;
+}
+#tool-popover.hidden {
+  display: none;
+}
+#tool-popover .tool-opt-row {
+  grid-column: 1 / span 2;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-top: 1px solid var(--border);
+  padding-top: 5px;
+  margin-top: 2px;
+}
 
-    /* Tool Buttons */
-    .tools-grid {
-      display: grid;
-      grid-template-columns: repeat(6, 1fr);
-      gap: 6px;
-    }
-    .tool-btn {
-      background: #2b303c;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 8px 4px;
-      border-radius: 8px;
-      font-size: 11px;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 3px;
-    }
-    .tool-btn span.icon { font-size: 16px; }
-    .tool-btn.active {
-      background: var(--accent);
-      border-color: #60a5fa;
-    }
+/* 空專案提示 */
+#empty-hint {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 8;
+}
+#empty-hint span {
+  background: var(--overlay-bg);
+  border: 1px solid var(--border);
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  box-shadow: var(--shadow);
+  pointer-events: auto;
+  cursor: pointer;
+}
+#empty-hint.hidden {
+  display: none;
+}
 
-    /* Brush & Zoom Sub-bar */
-    .sub-bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      font-size: 12px;
-      color: var(--text-sub);
-      gap: 8px;
-    }
-    .size-group {
-      display: flex;
-      gap: 4px;
-    }
-    .size-btn {
-      background: #2b303c;
-      border: 1px solid var(--border);
-      color: var(--text);
-      padding: 4px 9px;
-      border-radius: 6px;
-      font-size: 12px;
-    }
-    .size-btn.active {
-      background: var(--accent);
-      border-color: var(--accent);
-    }
+/* 底部滑出選單 */
+#menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.45);
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+}
+#menu-backdrop.hidden {
+  display: none;
+}
+#menu-sheet {
+  width: 100%;
+  max-height: 78%;
+  background: var(--panel);
+  border-top-left-radius: 14px;
+  border-top-right-radius: 14px;
+  border-top: 1px solid var(--border);
+  box-shadow: var(--shadow);
+  overflow-y: auto;
+  padding: 12px 14px calc(18px + env(safe-area-inset-bottom)) 14px;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+}
+.menu-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  position: sticky;
+  top: 0;
+  background: var(--panel);
+  padding: 4px 0 8px 0;
+  border-bottom: 1px solid var(--border);
+  z-index: 2;
+}
+.menu-header h2 {
+  margin: 0;
+  font-size: 16px;
+}
+.menu-sec {
+  border-bottom: 1px solid var(--border);
+  padding: 12px 0;
+}
+.menu-sec:last-child {
+  border-bottom: none;
+}
+.menu-sec h3 {
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+.form-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.form-row label {
+  font-size: 12px;
+  color: var(--text-sub);
+  min-width: 76px;
+}
+input[type="text"], input[type="number"], select {
+  background: var(--bg);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 6px 8px;
+  font-size: 13px;
+  min-height: 34px;
+}
+input[type="file"] {
+  font-size: 12px;
+  max-width: 220px;
+}
+.note-text {
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.45;
+  margin: 4px 0;
+}
+#cell-grid {
+  display: grid;
+  gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  padding-bottom: 4px;
+}
+.proj-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
+  padding: 6px 8px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  background: var(--bg);
+}
+.proj-item.current {
+  border-color: var(--accent);
+}
+.proj-item-name {
+  flex: 1;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#full-preview-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 6px 0;
+}
+#full-preview-wrap canvas {
+  border: 1px solid var(--border);
+  image-rendering: pixelated;
+}
+.help-list {
+  margin: 0;
+  padding-left: 18px;
+  line-height: 1.6;
+  font-size: 12px;
+}
 
-    /* Export Modal for iPhone Long-Press Save */
-    #exportModal {
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.82);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 100;
-      padding: 20px;
-    }
-    #exportModal.open { display: flex; }
-    .modal-card {
-      background: var(--panel-bg);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      max-width: 340px;
-      width: 100%;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-    .modal-card img {
-      width: 192px;
-      height: 192px;
-      margin: 0 auto;
-      image-rendering: pixelated;
-      border: 1px solid var(--border);
-      background: #16181d;
-    }
-    .modal-hint {
-      font-size: 12px;
-      color: var(--text-sub);
-      line-height: 1.4;
-    }
-  </style>
+/* Toast */
+#toast {
+  position: fixed;
+  top: calc(10px + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.92);
+  color: #fff;
+  padding: 7px 14px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.18s ease;
+  box-shadow: var(--shadow);
+  max-width: 90%;
+  text-align: center;
+}
+#toast.show {
+  opacity: 1;
+}
+@media (prefers-reduced-motion: reduce) {
+  #toast {
+    transition: none;
+  }
+}
+</style>
 </head>
 <body>
-
-  <!-- Top Header -->
-  <header>
-    <div style="display:flex; gap:6px;">
-      <label class="btn primary">
-        📁 画像読込
-        <input type="file" id="fileInput" accept="image/*" style="display:none;">
-      </label>
-      <button class="btn" id="toggleConvertBtn">⚙️ 変換設定</button>
+<div id="app">
+  <!-- 1. 頂列 -->
+  <header id="topbar">
+    <div id="app-title">像素修圖台</div>
+    <div id="top-info">
+      <span id="top-pen-swatch" class="swatch-inline checker-bg"></span>
+      <span id="top-info-text">筆 #000000｜(0,0) 透明</span>
     </div>
-    <div style="display:flex; gap:6px;">
-      <button class="btn" id="undoBtn" disabled>↩️</button>
-      <button class="btn" id="redoBtn" disabled>↪️</button>
-      <button class="btn primary" id="exportBtn">💾 保存</button>
-    </div>
+    <button id="btn-prev-cell" aria-label="上一格">‹</button>
+    <button id="btn-cell-num" aria-label="目前格編號，點擊打開選單">1-1</button>
+    <button id="btn-next-cell" aria-label="下一格">›</button>
+    <button id="btn-reset-zoom" aria-label="縮放還原">⤢</button>
+    <button id="btn-open-menu" aria-label="選單">☰</button>
   </header>
 
-  <!-- Collapsible Conversion Settings -->
-  <div id="convertDrawer">
-    <div class="setting-row">
-      <span>解像度 (サイズ)</span>
-      <select id="resSelect">
-        <option value="32">32 × 32</option>
-        <option value="64">64 × 64</option>
-        <option value="96">96 × 96</option>
-        <option value="128" selected>128 × 128</option>
-        <option value="160">160 × 160</option>
-        <option value="256">256 × 256</option>
-      </select>
+  <!-- 2. 參考畫布 -->
+  <section id="ref-pane" class="canvas-pane">
+    <canvas id="ref-cv" class="main-cv"></canvas>
+    <button id="ref-mode-btn" class="stop-touch" aria-label="切換參考模式">參考：原圖</button>
+    <div id="mini-preview-box" class="stop-touch" role="button" aria-label="切換小預覽動畫速度">
+      <span id="mini-fps-tag">8fps</span>
+      <canvas id="mini-cv-1x" width="32" height="32"></canvas>
+      <canvas id="mini-cv-2x" width="64" height="64"></canvas>
     </div>
-    <div class="setting-row">
-      <span>色数制限 (減色)</span>
-      <select id="paletteLimitSelect">
-        <option value="0">制限なし (フルカラー)</option>
-        <option value="64">64色</option>
-        <option value="32" selected>32色 (レトロ風)</option>
-        <option value="16">16色 (SFC/MD風)</option>
-        <option value="8">8色 (GB/FC風)</option>
-      </select>
-    </div>
-    <div class="setting-row">
-      <span>縮小アルゴリズム</span>
-      <select id="sampleModeSelect">
-        <option value="pixelated" selected>ニアレスト (ドット感重視)</option>
-        <option value="smooth">バイリニア (なめらか縮小)</option>
-      </select>
-    </div>
-    <div style="display:flex; gap:8px;">
-      <button class="btn primary" id="reconvertBtn" style="flex:1;">🔄 設定を反映して再変換</button>
-      <button class="btn" id="clearCanvasBtn">🗑️ 白紙</button>
-    </div>
+  </section>
+
+  <!-- 3. 色條 A -->
+  <div id="bar-a" class="color-bar stop-touch" aria-label="參考圖取樣色條">
+    <button id="btn-sample-scope" aria-label="切換取色範圍">取色：本格</button>
+    <div id="bar-a-swatches" style="display:flex;gap:4px;align-items:center;"></div>
   </div>
 
-  <!-- Main Interactive Viewport -->
-  <div id="viewport">
-    <div id="canvasWrapper">
-      <canvas id="spriteCanvas" width="128" height="128"></canvas>
-      <canvas id="gridOverlay"></canvas>
-    </div>
-    <div id="statusBadge">128×128 | 100% | 2本指で拡大移動</div>
+  <!-- 4. 色條 B -->
+  <div id="bar-b" class="color-bar stop-touch" aria-label="最近與已用色條">
+    <span class="v-label">最近</span>
+    <div id="bar-b-recents" style="display:flex;gap:4px;align-items:center;"></div>
+    <span class="bar-sep"></span>
+    <span class="v-label">已用</span>
+    <div id="bar-b-used" style="display:flex;gap:4px;align-items:center;"></div>
   </div>
 
-  <!-- Bottom Editing Controls -->
-  <div id="bottomPanel">
-    <!-- Color Picker & Extracted Palette -->
-    <div class="palette-row">
-      <div id="colorPickerWrap">
-        <input type="color" id="colorPicker" value="#ff4757">
-      </div>
-      <div id="paletteSwatches"></div>
+  <!-- 5. 像素畫布 -->
+  <section id="px-pane" class="canvas-pane">
+    <canvas id="px-cv" class="main-cv"></canvas>
+
+    <!-- 動作列 -->
+    <div id="action-bar" class="stop-touch" aria-label="編輯動作列">
+      <button id="act-commit" class="primary" style="display:none;">確定</button>
+      <button id="act-cancel" class="danger" style="display:none;">取消</button>
+      <button id="act-deselect" style="display:none;">取消選取</button>
+      <button id="act-select-all">圈選全格</button>
+      <button id="act-clear-sel" class="danger">清空選取</button>
+      <button id="act-copy">複製</button>
+      <button id="act-paste">貼上</button>
+      <button id="act-restore-ref">還原參考色</button>
+      <button id="act-flip-h">左右翻轉</button>
+      <button id="act-flip-v">上下翻轉</button>
+      <button id="act-center-h">水平置中</button>
+      <button id="act-center-v">垂直置中</button>
+      <button id="act-mirror">鏡像：關</button>
     </div>
 
-    <!-- Brush Size, Grid & Zoom Reset -->
-    <div class="sub-bar">
-      <div class="size-group">
-        <button class="size-btn active" data-size="1">1px</button>
-        <button class="size-btn" data-size="2">2px</button>
-        <button class="size-btn" data-size="3">3px</button>
-        <button class="size-btn" data-size="5">5px</button>
+    <!-- 左上狀態字 -->
+    <div id="px-status">×1 紀錄 0/30</div>
+
+    <!-- 空專案提示 -->
+    <div id="empty-hint">
+      <span id="empty-hint-btn">從選單開新專案</span>
+    </div>
+
+    <!-- 左虛擬鍵：3x3 十字鍵 -->
+    <div id="vpad-left" class="vpad-group stop-touch" aria-label="方向與抓取虛擬鍵">
+      <span></span>
+      <button id="vk-up" aria-label="游標向上">▲</button>
+      <span></span>
+      <button id="vk-left" aria-label="游標向左">◀</button>
+      <button id="vk-grab" aria-label="抓或放下選取內容">抓</button>
+      <button id="vk-right" aria-label="游標向右">▶</button>
+      <span></span>
+      <button id="vk-down" aria-label="游標向下">▼</button>
+      <span></span>
+    </div>
+
+    <!-- 右虛擬鍵 -->
+    <div id="vpad-right" class="vpad-group stop-touch" aria-label="工具與塗色虛擬鍵">
+      <button id="vk-undo" aria-label="上一步">上一步</button>
+      <button id="vk-redo" aria-label="下一步">下一步</button>
+      <button id="vk-tool" aria-label="選擇工具">選格 ▾</button>
+      <button id="vk-pick" aria-label="吸取游標顏色">吸色</button>
+      <button id="btn-big-action" class="primary" aria-label="主要塗色或確認動作">塗</button>
+    </div>
+  </section>
+</div>
+
+<!-- 工具選單浮層 -->
+<div id="tool-popover" class="stop-touch hidden" role="dialog" aria-label="工具選單">
+  <button data-tool="select" class="tool-item">選格</button>
+  <button data-tool="brush" class="tool-item">畫筆</button>
+  <button data-tool="circle" class="tool-item">圓形</button>
+  <button data-tool="bucket" class="tool-item">油漆桶</button>
+  <button data-tool="marquee" class="tool-item" style="grid-column:1 / span 2;">圈選</button>
+  <div class="tool-opt-row">
+    <button id="opt-circle-fill">圓：空心</button>
+    <button id="opt-circle-ratio">比例：自由</button>
+    <button id="opt-circle-perfect">完美像素：開</button>
+  </div>
+</div>
+
+<!-- 底部選單面板 -->
+<div id="menu-backdrop" class="stop-touch hidden">
+  <div id="menu-sheet" role="dialog" aria-label="主選單">
+    <div class="menu-header">
+      <h2>選單設定</h2>
+      <button id="btn-close-menu" aria-label="關閉選單">關閉</button>
+    </div>
+
+    <!-- 1. 專案 -->
+    <div class="menu-sec">
+      <h3>1. 專案</h3>
+      <div class="form-row">
+        <label for="inp-proj-name">目前專案名稱</label>
+        <input type="text" id="inp-proj-name" placeholder="未命名專案" style="flex:1;">
       </div>
-      <div style="display:flex; gap:6px;">
-        <button class="size-btn" id="gridToggleBtn">グリッド</button>
-        <button class="size-btn" id="resetViewBtn">表示リセット</button>
+      <div id="proj-list"></div>
+      <button id="btn-new-proj-blank" aria-label="建立新專案">＋ 新專案</button>
+    </div>
+
+    <!-- 2. 新專案／換一組圖 -->
+    <div class="menu-sec" id="sec-load-images">
+      <h3>2. 新專案／換一組圖</h3>
+      <p class="note-text">像素圖每一格對應原圖同比例的位置，兩張圖要對齊。</p>
+      <div class="form-row">
+        <label for="file-hi">高解析原圖</label>
+        <input type="file" id="file-hi" accept="image/png,image/*">
+      </div>
+      <div class="form-row">
+        <label for="file-px">像素圖（選填）</label>
+        <input type="file" id="file-px" accept="image/png,image/*">
+      </div>
+      <div class="form-row">
+        <label for="file-base">人偶參考圖</label>
+        <input type="file" id="file-base" accept="image/png,image/*">
+      </div>
+      <div class="form-row">
+        <label for="inp-auto-w">自動縮寬×高</label>
+        <input type="number" id="inp-auto-w" value="128" min="4" max="512" style="width:72px;">
+        <span>×</span>
+        <input type="number" id="inp-auto-h" value="128" min="4" max="512" style="width:72px;">
+      </div>
+      <div class="form-row">
+        <label for="inp-cell-size">每格大小</label>
+        <input type="number" id="inp-cell-size" value="32" min="4" max="512" style="width:80px;">
+        <button id="btn-apply-images" class="primary">套用這組圖</button>
       </div>
     </div>
 
-    <!-- Tool Selection Bar -->
-    <div class="tools-grid">
-      <button class="tool-btn active" data-tool="pen">
-        <span class="icon">✏️</span><span>ペン</span>
-      </button>
-      <button class="tool-btn" data-tool="eraser">
-        <span class="icon">🧹</span><span>消しゴム</span>
-      </button>
-      <button class="tool-btn" data-tool="eyedropper">
-        <span class="icon">💧</span><span>スポイト</span>
-      </button>
-      <button class="tool-btn" data-tool="bucket">
-        <span class="icon">🪣</span><span>バケツ</span>
-      </button>
-      <button class="tool-btn" data-tool="magicErase">
-        <span class="icon">✨</span><span>背景透過</span>
-      </button>
-      <button class="tool-btn" data-tool="pan">
-        <span class="icon">✋</span><span>移動/拡大</span>
-      </button>
+    <!-- 3. 切換格子 -->
+    <div class="menu-sec">
+      <h3>3. 切換格子</h3>
+      <div id="cell-grid"></div>
+    </div>
+
+    <!-- 4. 複製整格到另一格 -->
+    <div class="menu-sec">
+      <h3>4. 複製整格到另一格</h3>
+      <div class="form-row">
+        <label for="sel-copy-src">來源 → 目標</label>
+        <select id="sel-copy-src"></select>
+        <span>→</span>
+        <select id="sel-copy-dst"></select>
+      </div>
+      <div class="form-row">
+        <label for="sel-copy-mode">方式</label>
+        <select id="sel-copy-mode">
+          <option value="normal">原樣</option>
+          <option value="fliph">左右翻轉</option>
+          <option value="flipv">上下翻轉</option>
+        </select>
+        <button id="btn-copy-cell-exec" class="primary">複製過去（覆蓋目標格）</button>
+      </div>
+    </div>
+
+    <!-- 5. 預覽 -->
+    <div class="menu-sec">
+      <h3>5. 預覽</h3>
+      <div class="form-row">
+        <span>動畫速度：</span>
+        <button data-fps="0" class="fps-btn">靜止</button>
+        <button data-fps="4" class="fps-btn">慢 4</button>
+        <button data-fps="8" class="fps-btn">中 8</button>
+        <button data-fps="12" class="fps-btn">快 12</button>
+      </div>
+      <div id="full-preview-wrap">
+        <div>
+          <div class="note-text">整張 1x</div>
+          <canvas id="sheet-cv-1x" width="64" height="64"></canvas>
+        </div>
+        <div>
+          <div class="note-text">整張 2x</div>
+          <canvas id="sheet-cv-2x" width="128" height="128"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. 顯示 -->
+    <div class="menu-sec">
+      <h3>6. 顯示</h3>
+      <div class="form-row">
+        <button id="tog-vpad">虛擬鍵：開</button>
+        <button id="tog-grid">格線：開</button>
+        <button id="tog-miniprev">小預覽：開</button>
+      </div>
+      <div class="form-row">
+        <span>背景：</span>
+        <button data-bg="grass" class="bg-btn">草地</button>
+        <button data-bg="checker" class="bg-btn">格紋</button>
+        <button data-bg="dark" class="bg-btn">深色</button>
+      </div>
+      <p id="menu-history-info" class="note-text">上一步可退 0 步，下一步可進 0 步（最多 30）</p>
+    </div>
+
+    <!-- 7. 匯出／匯入 -->
+    <div class="menu-sec">
+      <h3>7. 匯出／匯入</h3>
+      <div class="form-row">
+        <button id="btn-export-png" class="primary">匯出 PNG</button>
+        <button id="btn-export-proj">匯出專案</button>
+        <label for="file-import-proj" style="min-width:auto;">
+          <span role="button" tabindex="0" id="btn-import-proj-trigger" style="display:inline-flex;align-items:center;justify-content:center;padding:0 10px;min-height:34px;border:1px solid var(--border);border-radius:6px;background:var(--panel);cursor:pointer;">匯入專案</span>
+        </label>
+        <input type="file" id="file-import-proj" accept=".json,application/json" style="display:none;">
+      </div>
+      <p class="note-text">匯出後選『儲存到檔案』→ iCloud 雲碟 / ProjectNine-Pixel 資料夾</p>
+    </div>
+
+    <!-- 8. 操作說明 -->
+    <div class="menu-sec">
+      <h3>8. 操作說明</h3>
+      <ul class="help-list">
+        <li><b>單指操作（像素畫布）</b>：依目前工具移動游標、畫筆塗色、拉出圓形／圈選，或放開填滿油漆桶。在參考畫布上單指只移動游標。</li>
+        <li><b>雙指手勢</b>：捏合縮放（1～16 倍）、雙指拖曳平移，兩張畫布同步檢視。點頂列「⤢」還原 1 倍。</li>
+        <li><b>三指拖曳</b>：有圈選或浮起時直接拖動選取內容；否則若開啟鏡像，可拖動半像素鏡像對稱線。</li>
+        <li><b>選色即塗</b>：工具為「選格」或「畫筆」時，點擊色條任一色塊會直接將游標像素塗成該色（同格連點只記一步歷史）。</li>
+        <li><b>虛擬鍵連塗</b>：按住右下大「塗」鍵不放，再按左側十字鍵，可沿路連續塗色。</li>
+        <li><b>浮起移動</b>：圈選後按「抓」或用十字鍵移動，內容會浮起，調整完畢按「確定」或「放下」寫入，按「取消」或「上一步」還原。</li>
+        <li><b>桌機快捷鍵</b>：方向鍵移動、空白／Enter 觸發大鍵、Esc 取消浮起或圈選、I 吸色、⌘/Ctrl+C 複製、⌘/Ctrl+V 貼上、⌘/Ctrl+Z 復原、⌘/Ctrl+Shift+Z 重做。</li>
+      </ul>
     </div>
   </div>
+</div>
 
-  <!-- Export Modal -->
-  <div id="exportModal">
-    <div class="modal-card">
-      <div style="font-weight:700; font-size:15px;">スプライト画像の保存</div>
-      <img id="exportPreviewImg" alt="Sprite Preview">
-      <div class="modal-hint">
-        📱 <b>iPhoneの写真に保存する場合:</b><br>
-        上のプレビュー画像を<b>長押し</b>して「"写真"に保存」を選択してください。
-      </div>
-      <div style="display:flex; gap:8px;">
-        <button class="btn" id="download1xBtn" style="flex:1;">等倍PNG (ゲーム用)</button>
-        <button class="btn primary" id="download4xBtn" style="flex:1;">拡大PNG (SNS/閲覧用)</button>
-      </div>
-      <button class="btn" id="closeModalBtn">閉じる</button>
-    </div>
-  </div>
+<div id="toast" role="status" aria-live="polite"></div>
 
-  <script>
-    const spriteCanvas = document.getElementById('spriteCanvas');
-    const ctx = spriteCanvas.getContext('2d', { willReadFrequently: true });
-    const gridOverlay = document.getElementById('gridOverlay');
-    const gridCtx = gridOverlay.getContext('2d');
-    const canvasWrapper = document.getElementById('canvasWrapper');
-    const viewport = document.getElementById('viewport');
-    const statusBadge = document.getElementById('statusBadge');
+<script>
+(() => {
+  'use strict';
 
-    // State
-    let spriteSize = 128;
-    let currentTool = 'pen';
-    let currentColor = '#ff4757';
-    let brushSize = 1;
-    let showGrid = false;
-    let sourceImage = null;
+  // --- 常數與預設偏好 ---
+  const PREF_KEY = 'pixelfixer_prefs_v1';
+  const LAST_PROJ_KEY = 'pixelfixer_last_proj_v1';
+  const DB_NAME = 'PixelFixerDB';
+  const DB_STORE = 'projects';
+  const MAX_HISTORY = 30;
 
-    // Viewport Transform (Pan & Zoom)
-    let scale = 1;
-    let panX = 0;
-    let panY = 0;
-    let baseDisplaySize = 300;
+  const defaultPrefs = {
+    fps: 8,
+    circleFill: false,
+    circleSquare: false,
+    circlePerfect: true,
+    showGrid: true,
+    bg: 'grass', // 'grass' | 'checker' | 'dark'
+    showMiniPrev: true,
+    sampleScope: 'cell', // 'cell' | '8' | '16'
+    refMode: 'hi', // 'hi' | 'base' | 'prev' | 'next'
+    showVpad: true
+  };
 
-    // Undo / Redo Stacks
-    const MAX_HISTORY = 30;
-    let undoStack = [];
-    let redoStack = [];
+  let prefs = { ...defaultPrefs };
+  try {
+    const saved = localStorage.getItem(PREF_KEY);
+    if (saved) prefs = { ...defaultPrefs, ...JSON.parse(saved) };
+  } catch (e) {}
 
-    // Initialize workspace
-    function initCanvas(size, clear = true) {
-      spriteSize = size;
-      spriteCanvas.width = size;
-      spriteCanvas.height = size;
-
-      const vw = viewport.clientWidth || 360;
-      const vh = viewport.clientHeight || 420;
-      baseDisplaySize = Math.min(vw, vh) * 0.88;
-      canvasWrapper.style.width = `${baseDisplaySize}px`;
-      canvasWrapper.style.height = `${baseDisplaySize}px`;
-
-      if (clear) {
-        ctx.clearRect(0, 0, size, size);
-        drawSamplePlaceholder();
-      }
-      drawGridOverlay();
-      resetView();
-      saveHistory(true);
-      extractPaletteFromCanvas();
+  function savePrefs() {
+    try {
+      localStorage.setItem(PREF_KEY, JSON.stringify(prefs));
+    } catch (e) {
+      showToast('偏好設定儲存失敗');
     }
+  }
 
-    // Initial sample pixel art so the user can test immediately
-    function drawSamplePlaceholder() {
-      ctx.clearRect(0, 0, spriteSize, spriteSize);
-      const cx = Math.floor(spriteSize / 2);
-      const cy = Math.floor(spriteSize / 2);
-      const r = Math.floor(spriteSize * 0.28);
-      for (let y = cy - r; y <= cy + r; y++) {
-        for (let x = cx - r; x <= cx + r; x++) {
-          const dist = Math.hypot(x - cx, y - cy);
-          if (dist < r && dist >= r - 2) {
-            ctx.fillStyle = '#1e293b';
-            ctx.fillRect(x, y, 1, 1);
-          } else if (dist < r - 2) {
-            ctx.fillStyle = (x + y) % 2 === 0 ? '#3b82f6' : '#60a5fa';
-            ctx.fillRect(x, y, 1, 1);
+  // --- Toast ---
+  let toastTimer = null;
+  const toastEl = document.getElementById('toast');
+  function showToast(msg) {
+    toastEl.textContent = msg;
+    toastEl.classList.add('show');
+    if (toastTimer) clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => {
+      toastEl.classList.remove('show');
+    }, 1700);
+  }
+
+  // --- 顏色轉換輔助 ---
+  function rgbaToInt(r, g, b, a) {
+    if (a < 128) return 0;
+    return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+  }
+  function intToHex(c) {
+    if (!c) return null;
+    const r = c & 0xff;
+    const g = (c >>> 8) & 0xff;
+    const b = (c >>> 16) & 0xff;
+    return '#' + [r, g, b].map(x => x.toString(16).padStart(2, '0')).join('');
+  }
+  function hexToInt(hex) {
+    if (!hex || hex === 'transparent') return 0;
+    const clean = hex.replace('#', '');
+    const r = parseInt(clean.slice(0, 2), 16) || 0;
+    const g = parseInt(clean.slice(2, 4), 16) || 0;
+    const b = parseInt(clean.slice(4, 6), 16) || 0;
+    return ((255 << 24) | (b << 16) | (g << 8) | r) >>> 0;
+  }
+  function hexToRgb(hex) {
+    if (!hex) return { r: 0, g: 0, b: 0, a: 0 };
+    const clean = hex.replace('#', '');
+    return {
+      r: parseInt(clean.slice(0, 2), 16) || 0,
+      g: parseInt(clean.slice(2, 4), 16) || 0,
+      b: parseInt(clean.slice(4, 6), 16) || 0,
+      a: 255
+    };
+  }
+
+  // --- 狀態機 ---
+  const state = {
+    projId: null,
+    projName: '未命名專案',
+    cellSize: 32,
+    hasProject: false,
+
+    // 離屏畫布與資料
+    hiCanvas: null,
+    pxCanvas: null,
+    pxCtx: null,
+    baseCanvas: null,
+
+    cols: 1,
+    rows: 1,
+    cellCol: 0,
+    cellRow: 0,
+
+    // 游標（格內座標）
+    curX: 0,
+    curY: 0,
+
+    // 筆色（null 代表透明，否則 '#rrggbb'）
+    penColor: '#000000',
+    recents: ['#000000', '#ffffff'],
+
+    // 檢視（1 ~ 16）
+    zoom: 1,
+    panX: 16,
+    panY: 16,
+
+    // 工具：'select' | 'brush' | 'circle' | 'bucket' | 'marquee'
+    tool: 'select',
+    circleStart: null, // {x, y}
+
+    // 鏡像：'off' | 'h' | 'v' | 'hv'
+    mirrorMode: 'off',
+    mirrorX: 16,
+    mirrorY: 16,
+
+    // 圈選與浮起
+    selection: null, // {x, y, w, h} 格內座標
+    floating: null,  // {x, y, w, h, data: Uint32Array, origSnap: Uint32Array, baseUnder: Uint32Array, origSel: {x,y,w,h}}
+
+    // 剪貼簿
+    clipboard: null, // {x, y, w, h, data: Uint32Array}
+
+    // 歷史紀錄
+    undoStack: [],
+    redoStack: [],
+    lastSwatchPaint: null, // {sheetX, sheetY, histIdx}
+
+    // 虛擬鍵按住塗
+    holdingBigPaint: false,
+    holdPaintChanges: null, // Map<key, {x,y,before,after}>
+
+    // 動畫計時
+    animFrame: 0,
+    lastAnimTick: 0
+  };
+
+  // --- IndexedDB ---
+  let dbInstance = null;
+  let memoryProjects = new Map();
+
+  function openDB() {
+    return new Promise((resolve) => {
+      if (dbInstance) return resolve(dbInstance);
+      if (!window.indexedDB) return resolve(null);
+      try {
+        const req = indexedDB.open(DB_NAME, 1);
+        req.onupgradeneeded = (e) => {
+          const db = e.target.result;
+          if (!db.objectStoreNames.contains(DB_STORE)) {
+            db.createObjectStore(DB_STORE, { keyPath: 'id' });
           }
-        }
-      }
-    }
-
-    // Draw crisp grid lines on overlay canvas
-    function drawGridOverlay() {
-      const dpr = window.devicePixelRatio || 2;
-      gridOverlay.width = baseDisplaySize * dpr;
-      gridOverlay.height = baseDisplaySize * dpr;
-      gridCtx.clearRect(0, 0, gridOverlay.width, gridOverlay.height);
-
-      const step = gridOverlay.width / spriteSize;
-      if (step < 3) return; // Hide if too dense
-
-      gridCtx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
-      gridCtx.lineWidth = 1;
-      gridCtx.beginPath();
-      for (let i = 1; i < spriteSize; i++) {
-        const pos = Math.floor(i * step) + 0.5;
-        gridCtx.moveTo(pos, 0);
-        gridCtx.lineTo(pos, gridOverlay.height);
-        gridCtx.moveTo(0, pos);
-        gridCtx.lineTo(gridOverlay.width, pos);
-      }
-      gridCtx.stroke();
-    }
-
-    function updateTransform() {
-      canvasWrapper.style.transform = `translate(${panX}px, ${panY}px) scale(${scale})`;
-      statusBadge.textContent = `${spriteSize}×${spriteSize} | ${Math.round(scale * 100)}%`;
-    }
-
-    function resetView() {
-      scale = 1;
-      panX = 0;
-      panY = 0;
-      updateTransform();
-    }
-
-    // History management
-    function saveHistory(resetRedo = true) {
-      const data = ctx.getImageData(0, 0, spriteSize, spriteSize);
-      undoStack.push(data);
-      if (undoStack.length > MAX_HISTORY) undoStack.shift();
-      if (resetRedo) redoStack = [];
-      updateHistoryButtons();
-    }
-
-    function undo() {
-      if (undoStack.length <= 1) return;
-      const current = undoStack.pop();
-      redoStack.push(current);
-      const prev = undoStack[undoStack.length - 1];
-      ctx.putImageData(prev, 0, 0);
-      updateHistoryButtons();
-    }
-
-    function redo() {
-      if (redoStack.length === 0) return;
-      const next = redoStack.pop();
-      undoStack.push(next);
-      ctx.putImageData(next, 0, 0);
-      updateHistoryButtons();
-    }
-
-    function updateHistoryButtons() {
-      document.getElementById('undoBtn').disabled = undoStack.length <= 1;
-      document.getElementById('redoBtn').disabled = redoStack.length === 0;
-    }
-
-    // High-Res Image to Low-Res Pixel Sprite Conversion
-    function convertImageToSprite() {
-      if (!sourceImage) return;
-      const targetSize = parseInt(document.getElementById('resSelect').value, 10);
-      const colorLimit = parseInt(document.getElementById('paletteLimitSelect').value, 10);
-      const sampleMode = document.getElementById('sampleModeSelect').value;
-
-      if (targetSize !== spriteSize) {
-        spriteSize = targetSize;
-        spriteCanvas.width = spriteSize;
-        spriteCanvas.height = spriteSize;
-        drawGridOverlay();
-      }
-
-      ctx.clearRect(0, 0, spriteSize, spriteSize);
-      ctx.imageSmoothingEnabled = (sampleMode === 'smooth');
-      ctx.imageSmoothingQuality = 'medium';
-
-      // Fit aspect ratio (Contain)
-      const iw = sourceImage.width;
-      const ih = sourceImage.height;
-      const ratio = Math.min(spriteSize / iw, spriteSize / ih);
-      const nw = Math.round(iw * ratio);
-      const nh = Math.round(ih * ratio);
-      const ox = Math.floor((spriteSize - nw) / 2);
-      const oy = Math.floor((spriteSize - nh) / 2);
-
-      ctx.drawImage(sourceImage, ox, oy, nw, nh);
-
-      // Quantize colors & clean alpha
-      const imgData = ctx.getImageData(0, 0, spriteSize, spriteSize);
-      const data = imgData.data;
-
-      if (colorLimit > 0) {
-        // Uniform / clustered quantization for crisp retro palette
-        const levels = Math.max(2, Math.round(Math.cbrt(colorLimit)));
-        const step = 255 / (levels - 1);
-        for (let i = 0; i < data.length; i += 4) {
-          if (data[i + 3] < 128) {
-            data[i + 3] = 0; // Crisp transparent cutoff
-          } else {
-            data[i]     = Math.round(Math.round(data[i] / step) * step);
-            data[i + 1] = Math.round(Math.round(data[i + 1] / step) * step);
-            data[i + 2] = Math.round(Math.round(data[i + 2] / step) * step);
-            data[i + 3] = 255;
-          }
-        }
-      } else {
-        for (let i = 0; i < data.length; i += 4) {
-          data[i + 3] = data[i + 3] < 128 ? 0 : 255;
-        }
-      }
-
-      ctx.putImageData(imgData, 0, 0);
-      saveHistory(true);
-      extractPaletteFromCanvas();
-      updateTransform();
-    }
-
-    // Extract frequent colors from the sprite into the swatch bar
-    function extractPaletteFromCanvas() {
-      const data = ctx.getImageData(0, 0, spriteSize, spriteSize).data;
-      const counts = new Map();
-      for (let i = 0; i < data.length; i += 4) {
-        if (data[i + 3] < 128) continue;
-        const hex = rgbToHex(data[i], data[i + 1], data[i + 2]);
-        counts.set(hex, (counts.get(hex) || 0) + 1);
-      }
-      const sorted = [...counts.entries()]
-        .sort((a, b) => b[1] - a[1])
-        .slice(0, 24)
-        .map(e => e[0]);
-
-      if (sorted.length === 0) {
-        sorted.push('#ff4757', '#ffa502', '#2ed573', '#1e90ff', '#ffffff', '#000000');
-      }
-
-      const container = document.getElementById('paletteSwatches');
-      container.innerHTML = '';
-      sorted.forEach(hex => {
-        const div = document.createElement('div');
-        div.className = 'swatch' + (hex.toLowerCase() === currentColor.toLowerCase() ? ' active' : '');
-        div.style.backgroundColor = hex;
-        div.addEventListener('click', () => selectColor(hex));
-        container.appendChild(div);
-      });
-    }
-
-    function selectColor(hex) {
-      currentColor = hex;
-      document.getElementById('colorPicker').value = hex;
-      document.getElementById('colorPickerWrap').style.backgroundColor = hex;
-      document.querySelectorAll('.swatch').forEach(el => {
-        el.classList.toggle('active', rgbStringToHex(el.style.backgroundColor) === hex.toLowerCase());
-      });
-      if (currentTool === 'eraser' || currentTool === 'eyedropper' || currentTool === 'pan') {
-        setTool('pen');
-      }
-    }
-
-    function rgbToHex(r, g, b) {
-      return '#' + [r, g, b].map(v => v.toString(16).padStart(2, '0')).join('');
-    }
-
-    function rgbStringToHex(rgb) {
-      const m = rgb.match(/\d+/g);
-      if (!m) return '';
-      return rgbToHex(+m[0], +m[1], +m[2]).toLowerCase();
-    }
-
-    function hexToRgba(hex) {
-      const n = parseInt(hex.slice(1), 16);
-      return [(n >> 16) & 255, (n >> 8) & 255, n & 255, 255];
-    }
-
-    // Map touch/mouse coordinates accurately to pixel grid
-    function getPixelCoords(clientX, clientY) {
-      const rect = spriteCanvas.getBoundingClientRect();
-      const x = Math.floor(((clientX - rect.left) / rect.width) * spriteSize);
-      const y = Math.floor(((clientY - rect.top) / rect.height) * spriteSize);
-      return { x, y };
-    }
-
-    // Draw a single pixel or brush square
-    function plotPixel(x, y) {
-      if (x < 0 || y < 0 || x >= spriteSize || y >= spriteSize) return;
-      const offset = Math.floor((brushSize - 1) / 2);
-      if (currentTool === 'eraser') {
-        ctx.clearRect(x - offset, y - offset, brushSize, brushSize);
-      } else if (currentTool === 'pen') {
-        ctx.fillStyle = currentColor;
-        ctx.fillRect(x - offset, y - offset, brushSize, brushSize);
-      }
-    }
-
-    // Bresenham line algorithm for smooth stroke on fast finger movement
-    function drawLine(x0, y0, x1, y1) {
-      const dx = Math.abs(x1 - x0);
-      const dy = Math.abs(y1 - y0);
-      const sx = (x0 < x1) ? 1 : -1;
-      const sy = (y0 < y1) ? 1 : -1;
-      let err = dx - dy;
-
-      while (true) {
-        plotPixel(x0, y0);
-        if (x0 === x1 && y0 === y1) break;
-        const e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; x0 += sx; }
-        if (e2 < dx)  { err += dx; y0 += sy; }
-      }
-    }
-
-    // Flood Fill (Bucket fill or Magic Background Eraser)
-    function floodFill(startX, startY, fillRgba, tolerance = 0) {
-      if (startX < 0 || startY < 0 || startX >= spriteSize || startY >= spriteSize) return;
-      const imgData = ctx.getImageData(0, 0, spriteSize, spriteSize);
-      const data = imgData.data;
-      const startIdx = (startY * spriteSize + startX) * 4;
-      const targetR = data[startIdx];
-      const targetG = data[startIdx + 1];
-      const targetB = data[startIdx + 2];
-      const targetA = data[startIdx + 3];
-
-      if (
-        targetR === fillRgba[0] &&
-        targetG === fillRgba[1] &&
-        targetB === fillRgba[2] &&
-        targetA === fillRgba[3]
-      ) return;
-
-      const visited = new Uint8Array(spriteSize * spriteSize);
-      const stack = [[startX, startY]];
-
-      while (stack.length > 0) {
-        const [x, y] = stack.pop();
-        if (x < 0 || y < 0 || x >= spriteSize || y >= spriteSize) continue;
-        const pIdx = y * spriteSize + x;
-        if (visited[pIdx]) continue;
-
-        const i = pIdx * 4;
-        const diff = Math.abs(data[i] - targetR) +
-                     Math.abs(data[i + 1] - targetG) +
-                     Math.abs(data[i + 2] - targetB) +
-                     Math.abs(data[i + 3] - targetA);
-
-        if (diff <= tolerance) {
-          visited[pIdx] = 1;
-          data[i]     = fillRgba[0];
-          data[i + 1] = fillRgba[1];
-          data[i + 2] = fillRgba[2];
-          data[i + 3] = fillRgba[3];
-          stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
-        }
-      }
-      ctx.putImageData(imgData, 0, 0);
-    }
-
-    // Touch & Pointer Handling (Supports 1-finger draw + 2-finger pinch zoom/pan)
-    let isDrawing = false;
-    let lastPt = null;
-    let isPinching = false;
-    let pinchStartDist = 0;
-    let pinchStartScale = 1;
-    let pinchStartCenter = { x: 0, y: 0 };
-    let panStartOffset = { x: 0, y: 0 };
-
-    viewport.addEventListener('touchstart', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 2) {
-        // Switch immediately to 2-finger pinch/pan
-        isDrawing = false;
-        isPinching = true;
-        pinchStartDist = getTouchDist(e.touches[0], e.touches[1]);
-        pinchStartScale = scale;
-        pinchStartCenter = getTouchCenter(e.touches[0], e.touches[1]);
-        panStartOffset = { x: panX, y: panY };
-        return;
-      }
-
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        if (currentTool === 'pan') {
-          isPinching = true;
-          pinchStartCenter = { x: t.clientX, y: t.clientY };
-          panStartOffset = { x: panX, y: panY };
-          return;
-        }
-
-        const pt = getPixelCoords(t.clientX, t.clientY);
-        handleSinglePointAction(pt.x, pt.y);
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchmove', (e) => {
-      e.preventDefault();
-      if (e.touches.length === 2 && isPinching) {
-        const dist = getTouchDist(e.touches[0], e.touches[1]);
-        const center = getTouchCenter(e.touches[0], e.touches[1]);
-        scale = Math.min(12, Math.max(0.7, pinchStartScale * (dist / pinchStartDist)));
-        panX = panStartOffset.x + (center.x - pinchStartCenter.x);
-        panY = panStartOffset.y + (center.y - pinchStartCenter.y);
-        updateTransform();
-        return;
-      }
-
-      if (e.touches.length === 1) {
-        const t = e.touches[0];
-        if (currentTool === 'pan' && isPinching) {
-          panX = panStartOffset.x + (t.clientX - pinchStartCenter.x);
-          panY = panStartOffset.y + (t.clientY - pinchStartCenter.y);
-          updateTransform();
-          return;
-        }
-
-        if (isDrawing && (currentTool === 'pen' || currentTool === 'eraser')) {
-          const pt = getPixelCoords(t.clientX, t.clientY);
-          if (lastPt) {
-            drawLine(lastPt.x, lastPt.y, pt.x, pt.y);
-          } else {
-            plotPixel(pt.x, pt.y);
-          }
-          lastPt = pt;
-        }
-      }
-    }, { passive: false });
-
-    viewport.addEventListener('touchend', (e) => {
-      if (isDrawing) {
-        isDrawing = false;
-        lastPt = null;
-        saveHistory(true);
-      }
-      if (e.touches.length === 0) {
-        isPinching = false;
+        };
+        req.onsuccess = (e) => {
+          dbInstance = e.target.result;
+          resolve(dbInstance);
+        };
+        req.onerror = () => resolve(null);
+      } catch (e) {
+        resolve(null);
       }
     });
+  }
 
-    // Mouse fallback for PC testing
-    let mouseDown = false;
-    viewport.addEventListener('mousedown', (e) => {
-      mouseDown = true;
-      if (currentTool === 'pan') {
-        pinchStartCenter = { x: e.clientX, y: e.clientY };
-        panStartOffset = { x: panX, y: panY };
-        return;
+  async function dbGetAllProjects() {
+    try {
+      const db = await openDB();
+      if (!db) return Array.from(memoryProjects.values()).sort((a, b) => b.updatedAt - a.updatedAt);
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).getAll();
+        req.onsuccess = () => resolve((req.result || []).sort((a, b) => b.updatedAt - a.updatedAt));
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      showToast('讀取專案清單失敗');
+      return Array.from(memoryProjects.values());
+    }
+  }
+
+  async function dbGetProject(id) {
+    try {
+      const db = await openDB();
+      if (!db) return memoryProjects.get(id) || null;
+      return await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readonly');
+        const req = tx.objectStore(DB_STORE).get(id);
+        req.onsuccess = () => resolve(req.result || null);
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      return memoryProjects.get(id) || null;
+    }
+  }
+
+  async function dbPutProject(record) {
+    memoryProjects.set(record.id, record);
+    try {
+      const db = await openDB();
+      if (!db) return;
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const req = tx.objectStore(DB_STORE).put(record);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      showToast('儲存至 IndexedDB 失敗，暫存於記憶體');
+    }
+  }
+
+  async function dbDeleteProject(id) {
+    memoryProjects.delete(id);
+    try {
+      const db = await openDB();
+      if (!db) return;
+      await new Promise((resolve, reject) => {
+        const tx = db.transaction(DB_STORE, 'readwrite');
+        const req = tx.objectStore(DB_STORE).delete(id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    } catch (e) {
+      showToast('刪除失敗');
+    }
+  }
+
+  function canvasToBlob(cv) {
+    return new Promise((resolve) => {
+      if (!cv) return resolve(null);
+      cv.toBlob((b) => resolve(b), 'image/png');
+    });
+  }
+
+  function loadImageFromSource(src) {
+    return new Promise((resolve, reject) => {
+      if (!src) return resolve(null);
+      const img = new Image();
+      let url = null;
+      if (src instanceof Blob) {
+        url = URL.createObjectURL(src);
+        img.src = url;
+      } else if (typeof src === 'string') {
+        img.src = src;
+      } else {
+        return resolve(null);
       }
-      const pt = getPixelCoords(e.clientX, e.clientY);
-      handleSinglePointAction(pt.x, pt.y);
+      img.onload = () => {
+        if (url) URL.revokeObjectURL(url);
+        const cv = document.createElement('canvas');
+        cv.width = img.naturalWidth || img.width;
+        cv.height = img.naturalHeight || img.height;
+        const ctx = cv.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        resolve(cv);
+      };
+      img.onerror = (err) => {
+        if (url) URL.revokeObjectURL(url);
+        reject(err);
+      };
+    });
+  }
+
+  let saveDebounceTimer = null;
+  function scheduleSave() {
+    if (!state.hasProject || !state.projId) return;
+    if (saveDebounceTimer) clearTimeout(saveDebounceTimer);
+    saveDebounceTimer = setTimeout(() => {
+      saveCurrentProjectNow(false);
+    }, 1000);
+  }
+
+  async function saveCurrentProjectNow(commitFloatingFirst = true) {
+    if (!state.hasProject || !state.projId || !state.pxCanvas) return;
+    if (saveDebounceTimer) {
+      clearTimeout(saveDebounceTimer);
+      saveDebounceTimer = null;
+    }
+    if (commitFloatingFirst && state.floating) {
+      commitFloating();
+    }
+    try {
+      const [hiBlob, pxBlob, baseBlob] = await Promise.all([
+        canvasToBlob(state.hiCanvas),
+        canvasToBlob(state.pxCanvas),
+        canvasToBlob(state.baseCanvas)
+      ]);
+      const rec = {
+        id: state.projId,
+        name: state.projName || '未命名專案',
+        cell: state.cellSize,
+        hiPng: hiBlob,
+        pxPng: pxBlob,
+        basePng: baseBlob,
+        recents: state.recents.slice(0, 10),
+        updatedAt: Date.now()
+      };
+      await dbPutProject(rec);
+      try {
+        localStorage.setItem(LAST_PROJ_KEY, state.projId);
+      } catch (e) {}
+    } catch (e) {
+      showToast('自動存檔失敗');
+    }
+  }
+
+  // --- 格子尺寸與座標計算 ---
+  function getCellBounds(col = state.cellCol, row = state.cellRow) {
+    if (!state.pxCanvas) return { sx: 0, sy: 0, w: state.cellSize, h: state.cellSize };
+    const sx = col * state.cellSize;
+    const sy = row * state.cellSize;
+    const w = Math.max(1, Math.min(state.cellSize, state.pxCanvas.width - sx));
+    const h = Math.max(1, Math.min(state.cellSize, state.pxCanvas.height - sy));
+    return { sx, sy, w, h };
+  }
+
+  function recalcGridDimensions() {
+    if (!state.pxCanvas) {
+      state.cols = 1;
+      state.rows = 1;
+      return;
+    }
+    state.cols = Math.max(1, Math.ceil(state.pxCanvas.width / state.cellSize));
+    state.rows = Math.max(1, Math.ceil(state.pxCanvas.height / state.cellSize));
+    state.cellCol = Math.min(state.cellCol, state.cols - 1);
+    state.cellRow = Math.min(state.cellRow, state.rows - 1);
+  }
+
+  function resetMirrorCenter() {
+    const { w, h } = getCellBounds();
+    state.mirrorX = w / 2;
+    state.mirrorY = h / 2;
+  }
+
+  function resetView() {
+    const { w, h } = getCellBounds();
+    state.zoom = 1;
+    state.panX = w / 2;
+    state.panY = h / 2;
+    requestRender();
+    updateStatusText();
+  }
+
+  function clampView() {
+    const { w, h } = getCellBounds();
+    if (state.zoom <= 1.001) {
+      state.zoom = 1;
+      state.panX = w / 2;
+      state.panY = h / 2;
+    } else {
+      state.panX = Math.max(0, Math.min(w, state.panX));
+      state.panY = Math.max(0, Math.min(h, state.panY));
+    }
+  }
+
+  function clampCursor() {
+    const { w, h } = getCellBounds();
+    state.curX = Math.max(0, Math.min(w - 1, Math.floor(state.curX)));
+    state.curY = Math.max(0, Math.min(h - 1, Math.floor(state.curY)));
+  }
+
+  // --- 像素讀寫與鏡像 ---
+  function getSheetPixelInt(sx, sy) {
+    if (!state.pxCtx || sx < 0 || sy < 0 || sx >= state.pxCanvas.width || sy >= state.pxCanvas.height) return 0;
+    const d = state.pxCtx.getImageData(sx, sy, 1, 1).data;
+    return rgbaToInt(d[0], d[1], d[2], d[3]);
+  }
+
+  function getCellSnapshot(col = state.cellCol, row = state.cellRow) {
+    const { sx, sy, w, h } = getCellBounds(col, row);
+    const imgData = state.pxCtx.getImageData(sx, sy, w, h);
+    const u32 = new Uint32Array(w * h);
+    const d = imgData.data;
+    for (let i = 0; i < w * h; i++) {
+      u32[i] = rgbaToInt(d[i * 4], d[i * 4 + 1], d[i * 4 + 2], d[i * 4 + 3]);
+    }
+    return u32;
+  }
+
+  function putCellSnapshot(u32, col = state.cellCol, row = state.cellRow) {
+    const { sx, sy, w, h } = getCellBounds(col, row);
+    const imgData = state.pxCtx.createImageData(w, h);
+    const d = imgData.data;
+    for (let i = 0; i < u32.length; i++) {
+      const c = u32[i];
+      if (c === 0) {
+        d[i * 4 + 3] = 0;
+      } else {
+        d[i * 4] = c & 0xff;
+        d[i * 4 + 1] = (c >>> 8) & 0xff;
+        d[i * 4 + 2] = (c >>> 16) & 0xff;
+        d[i * 4 + 3] = 255;
+      }
+    }
+    state.pxCtx.putImageData(imgData, sx, sy);
+  }
+
+  function getMirroredPoints(cx, cy) {
+    const { w, h } = getCellBounds();
+    const pts = [{ x: cx, y: cy }];
+    if (state.mirrorMode === 'h' || state.mirrorMode === 'hv') {
+      const mx = Math.round(2 * state.mirrorX - 1 - cx);
+      pts.push({ x: mx, y: cy });
+    }
+    if (state.mirrorMode === 'v' || state.mirrorMode === 'hv') {
+      const len = pts.length;
+      for (let i = 0; i < len; i++) {
+        const my = Math.round(2 * state.mirrorY - 1 - pts[i].y);
+        pts.push({ x: pts[i].x, y: my });
+      }
+    }
+    const seen = new Set();
+    const out = [];
+    for (const p of pts) {
+      if (p.x >= 0 && p.x < w && p.y >= 0 && p.y < h) {
+        const k = `${p.x},${p.y}`;
+        if (!seen.has(k)) {
+          seen.add(k);
+          out.push(p);
+        }
+      }
+    }
+    return out;
+  }
+
+  // --- 歷史紀錄 ---
+  function pushHistory(changes) {
+    if (!changes || changes.length === 0) return;
+    state.undoStack.push(changes);
+    if (state.undoStack.length > MAX_HISTORY) {
+      state.undoStack.shift();
+    }
+    state.redoStack = [];
+    state.lastSwatchPaint = null;
+    updateHistoryUI();
+    refreshUsedColors();
+    scheduleSave();
+  }
+
+  function applyHistoryStep(changes, isUndo) {
+    if (!state.pxCtx || !changes.length) return;
+    for (const ch of changes) {
+      const c = isUndo ? ch.before : ch.after;
+      const img = state.pxCtx.createImageData(1, 1);
+      if (c !== 0) {
+        img.data[0] = c & 0xff;
+        img.data[1] = (c >>> 8) & 0xff;
+        img.data[2] = (c >>> 16) & 0xff;
+        img.data[3] = 255;
+      }
+      state.pxCtx.putImageData(img, ch.x, ch.y);
+    }
+    const last = changes[changes.length - 1];
+    const targetCol = Math.floor(last.x / state.cellSize);
+    const targetRow = Math.floor(last.y / state.cellSize);
+    if (targetCol !== state.cellCol || targetRow !== state.cellRow) {
+      switchToCell(targetCol, targetRow, false);
+    }
+    state.curX = last.x - state.cellCol * state.cellSize;
+    state.curY = last.y - state.cellRow * state.cellSize;
+    clampCursor();
+    state.lastSwatchPaint = null;
+    updateHistoryUI();
+    refreshSampleColors();
+    refreshUsedColors();
+    requestRender();
+    scheduleSave();
+  }
+
+  function doUndo() {
+    if (state.floating) {
+      cancelFloating();
+      return;
+    }
+    if (state.undoStack.length === 0) return;
+    const step = state.undoStack.pop();
+    state.redoStack.push(step);
+    applyHistoryStep(step, true);
+  }
+
+  function doRedo() {
+    if (state.floating) commitFloating();
+    if (state.redoStack.length === 0) return;
+    const step = state.redoStack.pop();
+    state.undoStack.push(step);
+    applyHistoryStep(step, false);
+  }
+
+  // --- 浮起（Floating）機制 ---
+  function startFloatingFromSelection(defaultFullCell = true) {
+    if (!state.hasProject || state.floating) return;
+    const { w, h } = getCellBounds();
+    const sel = state.selection ? { ...state.selection } : (defaultFullCell ? { x: 0, y: 0, w, h } : null);
+    if (!sel) return;
+
+    const origSnap = getCellSnapshot();
+    const baseUnder = new Uint32Array(origSnap);
+    const floatData = new Uint32Array(sel.w * sel.h);
+
+    for (let ry = 0; ry < sel.h; ry++) {
+      for (let rx = 0; rx < sel.w; rx++) {
+        const cx = sel.x + rx;
+        const cy = sel.y + ry;
+        if (cx >= 0 && cx < w && cy >= 0 && cy < h) {
+          floatData[ry * sel.w + rx] = origSnap[cy * w + cx];
+          baseUnder[cy * w + cx] = 0;
+        }
+      }
+    }
+
+    state.selection = sel;
+    state.floating = {
+      x: sel.x,
+      y: sel.y,
+      w: sel.w,
+      h: sel.h,
+      data: floatData,
+      origSnap,
+      baseUnder,
+      origSel: state.selection ? { ...state.selection } : null
+    };
+    renderFloatingToCell();
+    updateUIState();
+    requestRender();
+  }
+
+  function renderFloatingToCell() {
+    if (!state.floating) return;
+    const { w, h } = getCellBounds();
+    const f = state.floating;
+    const comp = new Uint32Array(f.baseUnder);
+    for (let ry = 0; ry < f.h; ry++) {
+      const cy = f.y + ry;
+      if (cy < 0 || cy >= h) continue;
+      for (let rx = 0; rx < f.w; rx++) {
+        const cx = f.x + rx;
+        if (cx < 0 || cx >= w) continue;
+        const c = f.data[ry * f.w + rx];
+        if (c !== 0) {
+          comp[cy * w + cx] = c;
+        }
+      }
+    }
+    putCellSnapshot(comp);
+  }
+
+  function moveFloatingBy(dx, dy) {
+    if (!state.floating) {
+      startFloatingFromSelection(true);
+    }
+    if (!state.floating) return;
+    state.floating.x += dx;
+    state.floating.y += dy;
+    state.selection = {
+      x: state.floating.x,
+      y: state.floating.y,
+      w: state.floating.w,
+      h: state.floating.h
+    };
+    renderFloatingToCell();
+    updateUIState();
+    requestRender();
+  }
+
+  function commitFloating() {
+    if (!state.floating) return;
+    renderFloatingToCell();
+    const { sx, sy, w, h } = getCellBounds();
+    const f = state.floating;
+    const afterSnap = getCellSnapshot();
+    const changes = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        if (f.origSnap[idx] !== afterSnap[idx]) {
+          changes.push({
+            x: sx + x,
+            y: sy + y,
+            before: f.origSnap[idx],
+            after: afterSnap[idx]
+          });
+        }
+      }
+    }
+    const nx1 = Math.max(0, f.x);
+    const ny1 = Math.max(0, f.y);
+    const nx2 = Math.min(w, f.x + f.w);
+    const ny2 = Math.min(h, f.y + f.h);
+    if (nx2 > nx1 && ny2 > ny1) {
+      state.selection = { x: nx1, y: ny1, w: nx2 - nx1, h: ny2 - ny1 };
+    } else {
+      state.selection = null;
+    }
+    state.floating = null;
+    if (changes.length > 0) {
+      pushHistory(changes);
+    }
+    updateUIState();
+    requestRender();
+  }
+
+  function cancelFloating() {
+    if (!state.floating) return;
+    putCellSnapshot(state.floating.origSnap);
+    state.selection = state.floating.origSel ? { ...state.floating.origSel } : null;
+    state.floating = null;
+    updateUIState();
+    requestRender();
+  }
+
+  // --- 繪圖與工具演算法 ---
+  function paintAtCellPoint(cx, cy, colorHex, recordMap = null) {
+    if (!state.hasProject) return [];
+    const { sx, sy, w, h } = getCellBounds();
+    if (cx < 0 || cx >= w || cy < 0 || cy >= h) return [];
+    const targetInt = hexToInt(colorHex);
+    const pts = getMirroredPoints(cx, cy);
+    const changes = [];
+
+    for (const p of pts) {
+      const sheetX = sx + p.x;
+      const sheetY = sy + p.y;
+      const before = getSheetPixelInt(sheetX, sheetY);
+      if (before === targetInt) continue;
+
+      const img = state.pxCtx.createImageData(1, 1);
+      if (targetInt !== 0) {
+        img.data[0] = targetInt & 0xff;
+        img.data[1] = (targetInt >>> 8) & 0xff;
+        img.data[2] = (targetInt >>> 16) & 0xff;
+        img.data[3] = 255;
+      }
+      state.pxCtx.putImageData(img, sheetX, sheetY);
+
+      if (recordMap) {
+        const k = `${sheetX},${sheetY}`;
+        if (!recordMap.has(k)) {
+          recordMap.set(k, { x: sheetX, y: sheetY, before, after: targetInt });
+        } else {
+          recordMap.get(k).after = targetInt;
+        }
+      } else {
+        changes.push({ x: sheetX, y: sheetY, before, after: targetInt });
+      }
+    }
+    return changes;
+  }
+
+  function computeCirclePoints(p1, p2) {
+    let x0 = Math.min(p1.x, p2.x);
+    let y0 = Math.min(p1.y, p2.y);
+    let x1 = Math.max(p1.x, p2.x);
+    let y1 = Math.max(p1.y, p2.y);
+    let rw = x1 - x0 + 1;
+    let rh = y1 - y0 + 1;
+
+    if (prefs.circleSquare) {
+      const m = Math.max(rw, rh);
+      rw = m;
+      rh = m;
+      x0 = p2.x >= p1.x ? p1.x : p1.x - m + 1;
+      y0 = p2.y >= p1.y ? p1.y : p1.y - m + 1;
+      x1 = x0 + rw - 1;
+      y1 = y0 + rh - 1;
+    }
+
+    const inside = new Set();
+    const cx = (x0 + x1) / 2;
+    const cy = (y0 + y1) / 2;
+    const rx = rw / 2;
+    const ry = rh / 2;
+
+    for (let y = y0; y <= y1; y++) {
+      for (let x = x0; x <= x1; x++) {
+        if (rw <= 2 || rh <= 2) {
+          inside.add(`${x},${y}`);
+        } else {
+          const dx = (x - cx) / rx;
+          const dy = (y - cy) / ry;
+          if (dx * dx + dy * dy <= 1.0) {
+            inside.add(`${x},${y}`);
+          }
+        }
+      }
+    }
+
+    const rawPts = [];
+    if (prefs.circleFill || rw <= 2 || rh <= 2) {
+      for (const s of inside) {
+        const [x, y] = s.split(',').map(Number);
+        rawPts.push({ x, y });
+      }
+    } else {
+      for (const s of inside) {
+        const [x, y] = s.split(',').map(Number);
+        let isEdge = false;
+        const n4 = [
+          `${x - 1},${y}`, `${x + 1},${y}`,
+          `${x},${y - 1}`, `${x},${y + 1}`
+        ];
+        if (n4.some(k => !inside.has(k))) {
+          isEdge = true;
+        } else if (!prefs.circlePerfect) {
+          const nDiag = [
+            `${x - 1},${y - 1}`, `${x + 1},${y - 1}`,
+            `${x - 1},${y + 1}`, `${x + 1},${y + 1}`
+          ];
+          if (nDiag.some(k => !inside.has(k))) isEdge = true;
+        }
+        if (isEdge) rawPts.push({ x, y });
+      }
+    }
+
+    const { w, h } = getCellBounds();
+    const finalMap = new Map();
+    for (const pt of rawPts) {
+      const mPts = getMirroredPoints(pt.x, pt.y);
+      for (const mp of mPts) {
+        if (mp.x >= 0 && mp.x < w && mp.y >= 0 && mp.y < h) {
+          finalMap.set(`${mp.x},${mp.y}`, mp);
+        }
+      }
+    }
+    return {
+      rect: { x: x0, y: y0, w: rw, h: rh },
+      points: Array.from(finalMap.values())
+    };
+  }
+
+  function applyCircle(p1, p2) {
+    if (!state.hasProject) return;
+    const { sx, sy } = getCellBounds();
+    const { points } = computeCirclePoints(p1, p2);
+    const targetInt = hexToInt(state.penColor);
+    const changes = [];
+
+    for (const pt of points) {
+      const sheetX = sx + pt.x;
+      const sheetY = sy + pt.y;
+      const before = getSheetPixelInt(sheetX, sheetY);
+      if (before === targetInt) continue;
+      const img = state.pxCtx.createImageData(1, 1);
+      if (targetInt !== 0) {
+        img.data[0] = targetInt & 0xff;
+        img.data[1] = (targetInt >>> 8) & 0xff;
+        img.data[2] = (targetInt >>> 16) & 0xff;
+        img.data[3] = 255;
+      }
+      state.pxCtx.putImageData(img, sheetX, sheetY);
+      changes.push({ x: sheetX, y: sheetY, before, after: targetInt });
+    }
+    state.circleStart = null;
+    if (changes.length > 0) pushHistory(changes);
+    updateUIState();
+    requestRender();
+  }
+
+  function applyBucket(cx, cy) {
+    if (!state.hasProject) return;
+    const { sx, sy, w, h } = getCellBounds();
+    if (cx < 0 || cx >= w || cy < 0 || cy >= h) return;
+
+    const targetInt = hexToInt(state.penColor);
+    const snap = getCellSnapshot();
+    const origSnap = new Uint32Array(snap);
+    const seeds = getMirroredPoints(cx, cy);
+
+    for (const seed of seeds) {
+      const startColor = snap[seed.y * w + seed.x];
+      if (startColor === targetInt) continue;
+      const q = [seed];
+      const visited = new Uint8Array(w * h);
+      visited[seed.y * w + seed.x] = 1;
+
+      while (q.length > 0) {
+        const cur = q.pop();
+        snap[cur.y * w + cur.x] = targetInt;
+        const neighbors = [
+          { x: cur.x - 1, y: cur.y },
+          { x: cur.x + 1, y: cur.y },
+          { x: cur.x, y: cur.y - 1 },
+          { x: cur.x, y: cur.y + 1 }
+        ];
+        for (const nb of neighbors) {
+          if (nb.x >= 0 && nb.x < w && nb.y >= 0 && nb.y < h) {
+            const idx = nb.y * w + nb.x;
+            if (!visited[idx] && snap[idx] === startColor) {
+              visited[idx] = 1;
+              q.push(nb);
+            }
+          }
+        }
+      }
+    }
+
+    const changes = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        if (origSnap[idx] !== snap[idx]) {
+          changes.push({
+            x: sx + x,
+            y: sy + y,
+            before: origSnap[idx],
+            after: snap[idx]
+          });
+        }
+      }
+    }
+    if (changes.length > 0) {
+      putCellSnapshot(snap);
+      pushHistory(changes);
+      requestRender();
+    }
+  }
+
+  // --- 參考模式與取色演算法 ---
+  function getRefTargetCellInfo() {
+    const mode = prefs.refMode;
+    if (mode === 'prev') {
+      const c = (state.cellCol - 1 + state.cols) % state.cols;
+      return { col: c, row: state.cellRow };
+    }
+    if (mode === 'next') {
+      const c = (state.cellCol + 1) % state.cols;
+      return { col: c, row: state.cellRow };
+    }
+    return { col: state.cellCol, row: state.cellRow };
+  }
+
+  function sampleRefAtPixel(cellX, cellY, scope = prefs.sampleScope) {
+    if (!state.hasProject || !state.pxCanvas) {
+      return { transPct: 0, colors: [], hasSource: false, sampleBox: null };
+    }
+    const mode = prefs.refMode;
+    const { sx, sy } = getCellBounds();
+    const sheetX = sx + cellX;
+    const sheetY = sy + cellY;
+
+    if (mode === 'hi') {
+      if (!state.hiCanvas) return { transPct: 0, colors: [], hasSource: false, sampleBox: null };
+      const scaleX = state.hiCanvas.width / state.pxCanvas.width;
+      const scaleY = state.hiCanvas.height / state.pxCanvas.height;
+      let rx0, ry0, rw, rh;
+
+      if (scope === 'cell') {
+        rx0 = Math.floor(sheetX * scaleX);
+        ry0 = Math.floor(sheetY * scaleY);
+        const rx1 = Math.max(rx0 + 1, Math.ceil((sheetX + 1) * scaleX));
+        const ry1 = Math.max(ry0 + 1, Math.ceil((sheetY + 1) * scaleY));
+        rw = rx1 - rx0;
+        rh = ry1 - ry0;
+      } else {
+        const n = scope === '8' ? 8 : 16;
+        const cx = Math.floor((sheetX + 0.5) * scaleX);
+        const cy = Math.floor((sheetY + 0.5) * scaleY);
+        rx0 = cx - Math.floor(n / 2);
+        ry0 = cy - Math.floor(n / 2);
+        rw = n;
+        rh = n;
+      }
+
+      const cx0 = Math.max(0, Math.min(state.hiCanvas.width - 1, rx0));
+      const cy0 = Math.max(0, Math.min(state.hiCanvas.height - 1, ry0));
+      const cx1 = Math.max(cx0 + 1, Math.min(state.hiCanvas.width, rx0 + rw));
+      const cy1 = Math.max(cy0 + 1, Math.min(state.hiCanvas.height, ry0 + rh));
+      const cw = cx1 - cx0;
+      const ch = cy1 - cy0;
+
+      const ctx = state.hiCanvas.getContext('2d');
+      const d = ctx.getImageData(cx0, cy0, cw, ch).data;
+      const total = cw * ch;
+      let transCount = 0;
+
+      // RGB 高 5 位分桶
+      const buckets = new Map();
+      for (let i = 0; i < total; i++) {
+        const a = d[i * 4 + 3];
+        if (a < 128) {
+          transCount++;
+          continue;
+        }
+        const r = d[i * 4];
+        const g = d[i * 4 + 1];
+        const b = d[i * 4 + 2];
+        const key = ((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3);
+        let bkt = buckets.get(key);
+        if (!bkt) {
+          bkt = { count: 0, rSum: 0, gSum: 0, bSum: 0 };
+          buckets.set(key, bkt);
+        }
+        bkt.count++;
+        bkt.rSum += r;
+        bkt.gSum += g;
+        bkt.bSum += b;
+      }
+
+      let clusters = Array.from(buckets.values())
+        .map(b => ({
+          count: b.count,
+          rSum: b.rSum,
+          gSum: b.gSum,
+          bSum: b.bSum,
+          r: b.rSum / b.count,
+          g: b.gSum / b.count,
+          b: b.bSum / b.count
+        }))
+        .sort((a, b) => b.count - a.count);
+
+      // 合併距離 < 14 的群
+      const merged = [];
+      for (const c of clusters) {
+        let found = false;
+        for (const m of merged) {
+          const dr = c.r - m.r;
+          const dg = c.g - m.g;
+          const db = c.b - m.b;
+          if (dr * dr + dg * dg + db * db < 196) {
+            m.count += c.count;
+            m.rSum += c.rSum;
+            m.gSum += c.gSum;
+            m.bSum += c.bSum;
+            m.r = m.rSum / m.count;
+            m.g = m.gSum / m.count;
+            m.b = m.bSum / m.count;
+            found = true;
+            break;
+          }
+        }
+        if (!found) merged.push({ ...c });
+      }
+      merged.sort((a, b) => b.count - a.count);
+
+      const colors = merged.slice(0, 18).map(m => {
+        const rr = Math.round(m.r);
+        const gg = Math.round(m.g);
+        const bb = Math.round(m.b);
+        const hex = '#' + [rr, gg, bb].map(v => v.toString(16).padStart(2, '0')).join('');
+        return {
+          hex,
+          count: m.count,
+          pct: Math.round((m.count / total) * 100)
+        };
+      });
+
+      const sampleBox = {
+        x: cx0 / scaleX - sx,
+        y: cy0 / scaleY - sy,
+        w: cw / scaleX,
+        h: ch / scaleY
+      };
+      return {
+        transPct: Math.round((transCount / total) * 100),
+        transCount,
+        total,
+        colors,
+        hasSource: true,
+        sampleBox
+      };
+    } else {
+      // base / prev / next
+      let srcCanvas = null;
+      let targetCol = state.cellCol;
+      let targetRow = state.cellRow;
+      if (mode === 'base') {
+        srcCanvas = state.baseCanvas;
+      } else {
+        srcCanvas = state.pxCanvas;
+        const info = getRefTargetCellInfo();
+        targetCol = info.col;
+        targetRow = info.row;
+      }
+      if (!srcCanvas) return { transPct: 0, colors: [], hasSource: false, sampleBox: null };
+
+      const radius = scope === 'cell' ? 0 : (scope === '8' ? 1 : 2);
+      const { sx: csx, sy: csy, w: cw, h: ch } = getCellBounds(targetCol, targetRow);
+      const x0 = Math.max(0, cellX - radius);
+      const y0 = Math.max(0, cellY - radius);
+      const x1 = Math.min(cw - 1, cellX + radius);
+      const y1 = Math.min(ch - 1, cellY + radius);
+      const sw = Math.max(1, x1 - x0 + 1);
+      const sh = Math.max(1, y1 - y0 + 1);
+
+      const ctx = srcCanvas.getContext('2d');
+      const d = ctx.getImageData(csx + x0, csy + y0, sw, sh).data;
+      const total = sw * sh;
+      let transCount = 0;
+      const exactMap = new Map();
+
+      for (let i = 0; i < total; i++) {
+        if (d[i * 4 + 3] < 128) {
+          transCount++;
+          continue;
+        }
+        const hex = '#' + [d[i * 4], d[i * 4 + 1], d[i * 4 + 2]].map(v => v.toString(16).padStart(2, '0')).join('');
+        exactMap.set(hex, (exactMap.get(hex) || 0) + 1);
+      }
+
+      const colors = Array.from(exactMap.entries())
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 18)
+        .map(([hex, count]) => ({
+          hex,
+          count,
+          pct: Math.round((count / total) * 100)
+        }));
+
+      return {
+        transPct: Math.round((transCount / total) * 100),
+        transCount,
+        total,
+        colors,
+        hasSource: true,
+        sampleBox: { x: x0, y: y0, w: sw, h: sh }
+      };
+    }
+  }
+// --- 色條渲染與選色行為 ---
+  function addRecentColor(hex) {
+    if (!hex) return; // 透明不進最近色，因為色條 B 已固定有透明
+    const idx = state.recents.indexOf(hex);
+    if (idx !== -1) state.recents.splice(idx, 1);
+    state.recents.unshift(hex);
+    if (state.recents.length > 10) state.recents.length = 10;
+  }
+
+  function createSwatchButton(hex, pct = null) {
+    const btn = document.createElement('button');
+    btn.className = 'swatch-btn';
+    const isTrans = !hex || hex === 'transparent';
+    if (isTrans) {
+      btn.classList.add('checker-bg');
+      btn.setAttribute('aria-label', '透明');
+      const lbl = document.createElement('span');
+      lbl.className = 'swatch-trans-label';
+      lbl.textContent = '透明';
+      btn.appendChild(lbl);
+    } else {
+      btn.style.backgroundColor = hex;
+      btn.setAttribute('aria-label', hex);
+    }
+    if ((isTrans && !state.penColor) || (!isTrans && state.penColor === hex)) {
+      btn.classList.add('selected');
+    }
+    if (pct !== null) {
+      const sp = document.createElement('span');
+      sp.className = 'swatch-pct';
+      sp.textContent = pct + '%';
+      btn.appendChild(sp);
+    }
+    btn.addEventListener('click', () => {
+      handleSwatchSelect(isTrans ? null : hex);
+    });
+    return btn;
+  }
+
+  function handleSwatchSelect(hex) {
+    state.penColor = hex;
+    if (hex) addRecentColor(hex);
+
+    if (state.hasProject && (state.tool === 'select' || state.tool === 'brush')) {
+      if (state.floating) commitFloating();
+      const { sx, sy } = getCellBounds();
+      const sheetX = sx + state.curX;
+      const sheetY = sy + state.curY;
+      const targetInt = hexToInt(hex);
+
+      // 檢查是否在同一像素連續點不同色塊
+      if (
+        state.lastSwatchPaint &&
+        state.lastSwatchPaint.sheetX === sheetX &&
+        state.lastSwatchPaint.sheetY === sheetY &&
+        state.undoStack.length > 0 &&
+        state.lastSwatchPaint.histIdx === state.undoStack.length - 1
+      ) {
+        const lastChanges = state.undoStack[state.undoStack.length - 1];
+        for (const ch of lastChanges) {
+          const img = state.pxCtx.createImageData(1, 1);
+          if (ch.before !== 0) {
+            img.data[0] = ch.before & 0xff;
+            img.data[1] = (ch.before >>> 8) & 0xff;
+            img.data[2] = (ch.before >>> 16) & 0xff;
+            img.data[3] = 255;
+          }
+          state.pxCtx.putImageData(img, ch.x, ch.y);
+        }
+        state.undoStack.pop();
+      }
+
+      const changes = paintAtCellPoint(state.curX, state.curY, hex);
+      if (changes.length > 0) {
+        pushHistory(changes);
+        state.lastSwatchPaint = {
+          sheetX,
+          sheetY,
+          histIdx: state.undoStack.length - 1
+        };
+      }
+    }
+
+    refreshSampleColors();
+    refreshUsedColors();
+    updateTopInfo();
+    requestRender();
+    scheduleSave();
+  }
+
+  let currentSampleResult = null;
+  function refreshSampleColors() {
+    const wrap = document.getElementById('bar-a-swatches');
+    wrap.innerHTML = '';
+    currentSampleResult = sampleRefAtPixel(state.curX, state.curY, prefs.sampleScope);
+    if (!currentSampleResult.hasSource) return;
+
+    if (currentSampleResult.transCount > 0) {
+      wrap.appendChild(createSwatchButton(null, currentSampleResult.transPct));
+    }
+    for (const c of currentSampleResult.colors) {
+      wrap.appendChild(createSwatchButton(c.hex, c.pct));
+    }
+  }
+
+  function refreshUsedColors() {
+    const recWrap = document.getElementById('bar-b-recents');
+    const usedWrap = document.getElementById('bar-b-used');
+    recWrap.innerHTML = '';
+    usedWrap.innerHTML = '';
+
+    for (const hex of state.recents) {
+      recWrap.appendChild(createSwatchButton(hex));
+    }
+
+    usedWrap.appendChild(createSwatchButton(null));
+    if (!state.hasProject || !state.pxCtx) return;
+
+    const d = state.pxCtx.getImageData(0, 0, state.pxCanvas.width, state.pxCanvas.height).data;
+    const counts = new Map();
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) continue;
+      const c = ((255 << 24) | (d[i + 2] << 16) | (d[i + 1] << 8) | d[i]) >>> 0;
+      counts.set(c, (counts.get(c) || 0) + 1);
+    }
+    const sorted = Array.from(counts.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 48);
+
+    for (const [cInt] of sorted) {
+      usedWrap.appendChild(createSwatchButton(intToHex(cInt)));
+    }
+  }
+
+  // --- 還原參考色、翻轉、置中 ---
+  function restoreFromRef() {
+    if (!state.hasProject) return;
+    if (state.floating) commitFloating();
+    if (prefs.refMode === 'hi' && !state.hiCanvas) {
+      showToast('沒有原圖可參考');
+      return;
+    }
+    if (prefs.refMode === 'base' && !state.baseCanvas) {
+      showToast('沒有人偶圖可參考');
+      return;
+    }
+
+    const { sx, sy, w, h } = getCellBounds();
+    const sel = state.selection ? { ...state.selection } : { x: state.curX, y: state.curY, w: 1, h: 1 };
+    const snap = getCellSnapshot();
+    const origSnap = new Uint32Array(snap);
+
+    for (let ry = 0; ry < sel.h; ry++) {
+      for (let rx = 0; rx < sel.w; rx++) {
+        const cx = sel.x + rx;
+        const cy = sel.y + ry;
+        if (cx < 0 || cx >= w || cy < 0 || cy >= h) continue;
+        const res = sampleRefAtPixel(cx, cy, 'cell');
+        if (!res.hasSource) continue;
+        const topColor = res.colors.length > 0 ? res.colors[0] : null;
+        let chosenInt = 0;
+        if (topColor && res.transCount < topColor.count) {
+          chosenInt = hexToInt(topColor.hex);
+        } else {
+          chosenInt = 0;
+        }
+        snap[cy * w + cx] = chosenInt;
+      }
+    }
+
+    const changes = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        if (origSnap[idx] !== snap[idx]) {
+          changes.push({ x: sx + x, y: sy + y, before: origSnap[idx], after: snap[idx] });
+        }
+      }
+    }
+    if (changes.length > 0) {
+      putCellSnapshot(snap);
+      pushHistory(changes);
+      requestRender();
+    }
+  }
+
+  function flipFloating(dir) {
+    if (!state.hasProject) return;
+    if (!state.floating) startFloatingFromSelection(true);
+    if (!state.floating) return;
+    const f = state.floating;
+    const next = new Uint32Array(f.w * f.h);
+    for (let y = 0; y < f.h; y++) {
+      for (let x = 0; x < f.w; x++) {
+        const srcX = dir === 'h' ? (f.w - 1 - x) : x;
+        const srcY = dir === 'v' ? (f.h - 1 - y) : y;
+        next[y * f.w + x] = f.data[srcY * f.w + srcX];
+      }
+    }
+    f.data = next;
+    renderFloatingToCell();
+    requestRender();
+  }
+
+  function centerFloating(axis) {
+    if (!state.hasProject) return;
+    const wasFloating = !!state.floating;
+    if (!state.floating) startFloatingFromSelection(true);
+    if (!state.floating) return;
+    const f = state.floating;
+    const { w, h } = getCellBounds();
+
+    let minX = f.w, maxX = -1, minY = f.h, maxY = -1;
+    for (let y = 0; y < f.h; y++) {
+      for (let x = 0; x < f.w; x++) {
+        if (f.data[y * f.w + x] !== 0) {
+          if (x < minX) minX = x;
+          if (x > maxX) maxX = x;
+          if (y < minY) minY = y;
+          if (y > maxY) maxY = y;
+        }
+      }
+    }
+    if (maxX < minX || maxY < minY) {
+      showToast('沒有不透明像素可置中');
+      if (!wasFloating) cancelFloating();
+      return;
+    }
+    const contentW = maxX - minX + 1;
+    const contentH = maxY - minY + 1;
+    if (axis === 'h') {
+      const targetLeft = Math.floor((w - contentW) / 2);
+      f.x = targetLeft - minX;
+    } else {
+      const targetTop = Math.floor((h - contentH) / 2);
+      f.y = targetTop - minY;
+    }
+    state.selection = { x: f.x, y: f.y, w: f.w, h: f.h };
+    renderFloatingToCell();
+    updateUIState();
+    requestRender();
+  }
+
+  // --- 格子切換與整格複製 ---
+  function switchToCell(col, row, commitFirst = true) {
+    if (!state.hasProject) return;
+    if (commitFirst && state.floating) commitFloating();
+    state.selection = null;
+    state.circleStart = null;
+    state.lastSwatchPaint = null;
+    state.cellCol = Math.max(0, Math.min(state.cols - 1, col));
+    state.cellRow = Math.max(0, Math.min(state.rows - 1, row));
+    clampCursor();
+    clampView();
+    refreshSampleColors();
+    updateUIState();
+    requestRender();
+  }
+
+  function stepCell(delta) {
+    if (!state.hasProject) return;
+    const total = state.cols * state.rows;
+    const curIdx = state.cellRow * state.cols + state.cellCol;
+    const nextIdx = (curIdx + delta + total) % total;
+    switchToCell(nextIdx % state.cols, Math.floor(nextIdx / state.cols));
+  }
+
+  function copyEntireCellTo(srcCol, srcRow, dstCol, dstRow, mode) {
+    if (!state.hasProject) return;
+    if (state.floating) commitFloating();
+    if (srcCol === dstCol && srcRow === dstRow && mode === 'normal') {
+      showToast('來源與目標相同，無需複製');
+      return;
+    }
+    const srcB = getCellBounds(srcCol, srcRow);
+    const dstB = getCellBounds(dstCol, dstRow);
+    const srcSnap = getCellSnapshot(srcCol, srcRow);
+    const dstOrig = getCellSnapshot(dstCol, dstRow);
+    const dstNext = new Uint32Array(dstB.w * dstB.h);
+
+    for (let y = 0; y < dstB.h; y++) {
+      for (let x = 0; x < dstB.w; x++) {
+        const sx = mode === 'fliph' ? (srcB.w - 1 - x) : x;
+        const sy = mode === 'flipv' ? (srcB.h - 1 - y) : y;
+        if (sx >= 0 && sx < srcB.w && sy >= 0 && sy < srcB.h) {
+          dstNext[y * dstB.w + x] = srcSnap[sy * srcB.w + sx];
+        }
+      }
+    }
+
+    putCellSnapshot(dstNext, dstCol, dstRow);
+    const changes = [];
+    for (let y = 0; y < dstB.h; y++) {
+      for (let x = 0; x < dstB.w; x++) {
+        const idx = y * dstB.w + x;
+        if (dstOrig[idx] !== dstNext[idx]) {
+          changes.push({
+            x: dstB.sx + x,
+            y: dstB.sy + y,
+            before: dstOrig[idx],
+            after: dstNext[idx]
+          });
+        }
+      }
+    }
+    if (changes.length > 0) pushHistory(changes);
+    switchToCell(dstCol, dstRow, false);
+    showToast(`已複製到 ${dstRow + 1}-${dstCol + 1}（一步可復原）`);
+    closeMenu();
+  }
+
+  // --- 介面狀態同步 ---
+  function updateTopInfo() {
+    const sw = document.getElementById('top-pen-swatch');
+    if (state.penColor) {
+      sw.classList.remove('checker-bg');
+      sw.style.backgroundColor = state.penColor;
+    } else {
+      sw.style.backgroundColor = 'transparent';
+      sw.classList.add('checker-bg');
+    }
+
+    const penStr = state.penColor ? state.penColor : '透明';
+    let curHex = '透明';
+    if (state.hasProject) {
+      const { sx, sy } = getCellBounds();
+      const cInt = getSheetPixelInt(sx + state.curX, sy + state.curY);
+      if (cInt !== 0) curHex = intToHex(cInt);
+    }
+    document.getElementById('top-info-text').textContent = `筆 ${penStr}｜(${state.curX},${state.curY}) ${curHex}`;
+    document.getElementById('btn-cell-num').textContent = `${state.cellRow + 1}-${state.cellCol + 1}`;
+  }
+
+  function updateStatusText() {
+    const zStr = Number.isInteger(state.zoom) ? state.zoom : state.zoom.toFixed(1);
+    let txt = `×${zStr} 紀錄 ${state.undoStack.length}/${MAX_HISTORY}`;
+    if (state.selection) {
+      txt += ` 圈選 ${state.selection.w}×${state.selection.h}`;
+      if (state.floating) txt += '（未確定）';
+    }
+    document.getElementById('px-status').textContent = txt;
+  }
+
+  function updateHistoryUI() {
+    const canUndo = state.floating !== null || state.undoStack.length > 0;
+    const canRedo = state.redoStack.length > 0;
+    document.getElementById('vk-undo').disabled = !canUndo;
+    document.getElementById('vk-redo').disabled = !canRedo;
+    document.getElementById('menu-history-info').textContent =
+      `上一步可退 ${state.undoStack.length} 步，下一步可進 ${state.redoStack.length} 步（最多 30）`;
+    updateStatusText();
+  }
+
+  function updateUIState() {
+    updateTopInfo();
+    updateHistoryUI();
+
+    // 參考模式按鈕文字
+    const refBtn = document.getElementById('ref-mode-btn');
+    if (prefs.refMode === 'hi') {
+      refBtn.textContent = '參考：原圖';
+    } else if (prefs.refMode === 'base') {
+      refBtn.textContent = '參考：人偶';
+    } else if (prefs.refMode === 'prev') {
+      const info = getRefTargetCellInfo();
+      refBtn.textContent = `參考：前一格（${info.row + 1}-${info.col + 1}）`;
+    } else {
+      const info = getRefTargetCellInfo();
+      refBtn.textContent = `參考：後一格（${info.row + 1}-${info.col + 1}）`;
+    }
+
+    // 取色範圍按鈕
+    const scBtn = document.getElementById('btn-sample-scope');
+    scBtn.textContent = prefs.sampleScope === 'cell' ? '取色：本格' : `取色：${prefs.sampleScope}×${prefs.sampleScope}`;
+
+    // 動作列條件按鈕
+    const isFloat = !!state.floating;
+    const hasSel = !!state.selection;
+    document.getElementById('act-commit').style.display = isFloat ? 'inline-flex' : 'none';
+    document.getElementById('act-cancel').style.display = isFloat ? 'inline-flex' : 'none';
+    document.getElementById('act-deselect').style.display = (hasSel && !isFloat) ? 'inline-flex' : 'none';
+
+    const pasteBtn = document.getElementById('act-paste');
+    pasteBtn.textContent = state.clipboard ? `貼上 ${state.clipboard.w}×${state.clipboard.h}` : '貼上';
+
+    const restBtn = document.getElementById('act-restore-ref');
+    restBtn.textContent = hasSel ? '還原參考色（圈選）' : '還原參考色';
+
+    const mirBtn = document.getElementById('act-mirror');
+    const mirMap = { off: '鏡像：關', h: '鏡像：左右', v: '鏡像：上下', hv: '鏡像：上下左右' };
+    mirBtn.textContent = mirMap[state.mirrorMode];
+    mirBtn.classList.toggle('active', state.mirrorMode !== 'off');
+
+    // 虛擬鍵：抓／放下、工具、大鍵
+    const grabBtn = document.getElementById('vk-grab');
+    grabBtn.textContent = isFloat ? '放下' : '抓';
+    grabBtn.classList.toggle('active', isFloat);
+
+    const toolNames = { select: '選格', brush: '畫筆', circle: '圓形', bucket: '油漆桶', marquee: '圈選' };
+    const vkTool = document.getElementById('vk-tool');
+    vkTool.textContent = `${toolNames[state.tool]} ▾`;
+    vkTool.classList.toggle('active', state.tool !== 'select');
+
+    const bigBtn = document.getElementById('btn-big-action');
+    if (isFloat) {
+      bigBtn.textContent = '確定';
+    } else if (state.tool === 'bucket') {
+      bigBtn.textContent = '填滿';
+    } else if (state.tool === 'circle') {
+      bigBtn.textContent = state.circleStart ? '圓：完成' : '圓：起點';
+    } else if (state.tool === 'marquee') {
+      bigBtn.textContent = '圈選全格';
+    } else {
+      bigBtn.textContent = '塗';
+    }
+
+    // 工具選單內高亮
+    document.querySelectorAll('#tool-popover .tool-item').forEach(b => {
+      b.classList.toggle('active', b.dataset.tool === state.tool);
+    });
+    document.getElementById('opt-circle-fill').textContent = prefs.circleFill ? '圓：實心' : '圓：空心';
+    document.getElementById('opt-circle-ratio').textContent = prefs.circleSquare ? '比例：正圓' : '比例：自由';
+    document.getElementById('opt-circle-perfect').textContent = prefs.circlePerfect ? '完美像素：開' : '完美像素：關';
+
+    // 顯示偏好與空狀態
+    document.getElementById('vpad-left').classList.toggle('hidden', !prefs.showVpad);
+    document.getElementById('vpad-right').classList.toggle('hidden', !prefs.showVpad);
+    document.getElementById('mini-preview-box').classList.toggle('hidden', !prefs.showMiniPrev);
+    document.getElementById('mini-fps-tag').textContent = prefs.fps === 0 ? '靜止' : `${prefs.fps}fps`;
+    document.getElementById('empty-hint').classList.toggle('hidden', state.hasProject);
+
+    document.getElementById('tog-vpad').textContent = `虛擬鍵：${prefs.showVpad ? '開' : '關'}`;
+    document.getElementById('tog-grid').textContent = `格線：${prefs.showGrid ? '開' : '關'}`;
+    document.getElementById('tog-miniprev').textContent = `小預覽：${prefs.showMiniPrev ? '開' : '關'}`;
+
+    document.querySelectorAll('.bg-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.bg === prefs.bg);
+    });
+    document.querySelectorAll('.fps-btn').forEach(b => {
+      b.classList.toggle('active', Number(b.dataset.fps) === prefs.fps);
+    });
+  }
+
+  // --- 畫布渲染 ---
+  const refCv = document.getElementById('ref-cv');
+  const pxCv = document.getElementById('px-cv');
+  const refCtx = refCv.getContext('2d');
+  const pxViewCtx = pxCv.getContext('2d');
+
+  function getViewMetrics(canvas) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 3);
+    const cssW = canvas.clientWidth || 1;
+    const cssH = canvas.clientHeight || 1;
+    const targetW = Math.round(cssW * dpr);
+    const targetH = Math.round(cssH * dpr);
+    if (canvas.width !== targetW || canvas.height !== targetH) {
+      canvas.width = targetW;
+      canvas.height = targetH;
+    }
+    const { w: cellW, h: cellH } = getCellBounds();
+    const baseScale = Math.min(cssW / cellW, cssH / cellH) * 0.92;
+    const scale = baseScale * state.zoom;
+    const originX = cssW / 2 - state.panX * scale;
+    const originY = cssH / 2 - state.panY * scale;
+    return { dpr, cssW, cssH, cellW, cellH, scale, originX, originY };
+  }
+
+  function fillCanvasBackground(ctx, x, y, w, h, checkSize = 8) {
+    if (prefs.bg === 'grass') {
+      ctx.fillStyle = '#568c50';
+      ctx.fillRect(x, y, w, h);
+    } else if (prefs.bg === 'dark') {
+      ctx.fillStyle = '#202432';
+      ctx.fillRect(x, y, w, h);
+    } else {
+      ctx.fillStyle = '#e5e7eb';
+      ctx.fillRect(x, y, w, h);
+      ctx.fillStyle = '#cbd5e1';
+      const cols = Math.ceil(w / checkSize);
+      const rows = Math.ceil(h / checkSize);
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if ((r + c) % 2 === 1) {
+            const rx = x + c * checkSize;
+            const ry = y + r * checkSize;
+            const rw = Math.min(checkSize, x + w - rx);
+            const rh = Math.min(checkSize, y + h - ry);
+            ctx.fillRect(rx, ry, rw, rh);
+          }
+        }
+      }
+    }
+  }
+
+  function drawOverlays(ctx, m, isRefCanvas) {
+    const { originX, originY, scale, cellW, cellH } = m;
+
+    // 格子外框白線
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.strokeRect(originX, originY, cellW * scale, cellH * scale);
+
+    // 像素畫布格線（縮放 >= 6）
+    if (!isRefCanvas && prefs.showGrid && state.zoom >= 6) {
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 1; x < cellW; x++) {
+        const px = originX + x * scale;
+        ctx.moveTo(px, originY);
+        ctx.lineTo(px, originY + cellH * scale);
+      }
+      for (let y = 1; y < cellH; y++) {
+        const py = originY + y * scale;
+        ctx.moveTo(originX, py);
+        ctx.lineTo(originX + cellW * scale, py);
+      }
+      ctx.stroke();
+    }
+
+    // 鏡像線 #22d3ee
+    if (state.mirrorMode !== 'off') {
+      ctx.save();
+      ctx.strokeStyle = '#22d3ee';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      if (state.mirrorMode === 'h' || state.mirrorMode === 'hv') {
+        const mx = originX + state.mirrorX * scale;
+        ctx.moveTo(mx, originY);
+        ctx.lineTo(mx, originY + cellH * scale);
+      }
+      if (state.mirrorMode === 'v' || state.mirrorMode === 'hv') {
+        const my = originY + state.mirrorY * scale;
+        ctx.moveTo(originX, my);
+        ctx.lineTo(originX + cellW * scale, my);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 圈選框（黑白交錯虛線，浮起時白改黃）
+    if (state.selection) {
+      const s = state.selection;
+      const sx = originX + s.x * scale;
+      const sy = originY + s.y * scale;
+      const sw = s.w * scale;
+      const sh = s.h * scale;
+      ctx.save();
+      ctx.lineWidth = 1.5;
+      ctx.strokeStyle = '#000000';
+      ctx.strokeRect(sx, sy, sw, sh);
+      ctx.setLineDash([4, 4]);
+      ctx.strokeStyle = state.floating ? '#ffd23f' : '#ffffff';
+      ctx.strokeRect(sx, sy, sw, sh);
+      ctx.restore();
+    }
+
+    // 參考畫布黃框（取樣範圍）
+    if (isRefCanvas && currentSampleResult && currentSampleResult.sampleBox) {
+      const b = currentSampleResult.sampleBox;
+      ctx.save();
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        originX + b.x * scale,
+        originY + b.y * scale,
+        b.w * scale,
+        b.h * scale
+      );
+      ctx.restore();
+    }
+
+    // 圓形起點與預覽（像素畫布）
+    const activeCircleStart = gesture.circleDragging ? gesture.circleStartPt : state.circleStart;
+    if (!isRefCanvas && state.tool === 'circle' && activeCircleStart) {
+      const { points } = computeCirclePoints(activeCircleStart, { x: state.curX, y: state.curY });
+      ctx.save();
+      if (state.penColor) {
+        const rgb = hexToRgb(state.penColor);
+        ctx.fillStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, 0.55)`;
+      } else {
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.55)';
+      }
+      for (const p of points) {
+        ctx.fillRect(originX + p.x * scale, originY + p.y * scale, scale, scale);
+      }
+      ctx.strokeStyle = '#ffd23f';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        originX + activeCircleStart.x * scale,
+        originY + activeCircleStart.y * scale,
+        scale,
+        scale
+      );
+      ctx.restore();
+    }
+
+    // 游標紅框 #ff3b6b
+    ctx.save();
+    ctx.strokeStyle = '#ff3b6b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(
+      originX + state.curX * scale,
+      originY + state.curY * scale,
+      scale,
+      scale
+    );
+    ctx.restore();
+  }
+
+  let renderPending = false;
+  function requestRender() {
+    if (renderPending) return;
+    renderPending = true;
+    requestAnimationFrame(renderAll);
+  }
+
+  function renderAll() {
+    renderPending = false;
+    const mRef = getViewMetrics(refCv);
+    const mPx = getViewMetrics(pxCv);
+
+    // 渲染參考畫布
+    refCtx.save();
+    refCtx.scale(mRef.dpr, mRef.dpr);
+    fillCanvasBackground(refCtx, 0, 0, mRef.cssW, mRef.cssH, 10);
+
+    if (state.hasProject) {
+      const { sx, sy, w, h } = getCellBounds();
+      fillCanvasBackground(refCtx, mRef.originX, mRef.originY, w * mRef.scale, h * mRef.scale, 8);
+      if (prefs.refMode === 'hi' && state.hiCanvas) {
+        const scaleX = state.hiCanvas.width / state.pxCanvas.width;
+        const scaleY = state.hiCanvas.height / state.pxCanvas.height;
+        refCtx.imageSmoothingEnabled = true;
+        refCtx.imageSmoothingQuality = 'high';
+        refCtx.drawImage(
+          state.hiCanvas,
+          sx * scaleX, sy * scaleY, w * scaleX, h * scaleY,
+          mRef.originX, mRef.originY, w * mRef.scale, h * mRef.scale
+        );
+      } else if (prefs.refMode === 'base' && state.baseCanvas) {
+        refCtx.imageSmoothingEnabled = false;
+        refCtx.drawImage(
+          state.baseCanvas,
+          sx, sy, w, h,
+          mRef.originX, mRef.originY, w * mRef.scale, h * mRef.scale
+        );
+      } else if ((prefs.refMode === 'prev' || prefs.refMode === 'next') && state.pxCanvas) {
+        const info = getRefTargetCellInfo();
+        const tb = getCellBounds(info.col, info.row);
+        refCtx.imageSmoothingEnabled = false;
+        refCtx.drawImage(
+          state.pxCanvas,
+          tb.sx, tb.sy, tb.w, tb.h,
+          mRef.originX, mRef.originY, tb.w * mRef.scale, tb.h * mRef.scale
+        );
+      }
+      drawOverlays(refCtx, mRef, true);
+    }
+    refCtx.restore();
+
+    // 渲染像素畫布
+    pxViewCtx.save();
+    pxViewCtx.scale(mPx.dpr, mPx.dpr);
+    fillCanvasBackground(pxViewCtx, 0, 0, mPx.cssW, mPx.cssH, 10);
+
+    if (state.hasProject && state.pxCanvas) {
+      const { sx, sy, w, h } = getCellBounds();
+      fillCanvasBackground(pxViewCtx, mPx.originX, mPx.originY, w * mPx.scale, h * mPx.scale, 8);
+      pxViewCtx.imageSmoothingEnabled = false;
+      pxViewCtx.drawImage(
+        state.pxCanvas,
+        sx, sy, w, h,
+        mPx.originX, mPx.originY, w * mPx.scale, h * mPx.scale
+      );
+      drawOverlays(pxViewCtx, mPx, false);
+    }
+    pxViewCtx.restore();
+
+    renderMiniPreview();
+    if (!document.getElementById('menu-backdrop').classList.contains('hidden')) {
+      renderFullSheetPreview();
+    }
+  }
+
+  function renderMiniPreview() {
+    if (!state.hasProject || !state.pxCanvas || !prefs.showMiniPrev) return;
+    const cv1 = document.getElementById('mini-cv-1x');
+    const cv2 = document.getElementById('mini-cv-2x');
+    const { sx, sy, w, h } = getCellBounds();
+
+    if (cv1.width !== w || cv1.height !== h) {
+      cv1.width = w;
+      cv1.height = h;
+    }
+    if (cv2.width !== w * 2 || cv2.height !== h * 2) {
+      cv2.width = w * 2;
+      cv2.height = h * 2;
+    }
+
+    const ctx1 = cv1.getContext('2d');
+    fillCanvasBackground(ctx1, 0, 0, w, h, 4);
+    ctx1.imageSmoothingEnabled = false;
+    ctx1.drawImage(state.pxCanvas, sx, sy, w, h, 0, 0, w, h);
+
+    const animCol = prefs.fps === 0 ? state.cellCol : (state.animFrame % state.cols);
+    const ab = getCellBounds(animCol, state.cellRow);
+    const ctx2 = cv2.getContext('2d');
+    fillCanvasBackground(ctx2, 0, 0, w * 2, h * 2, 8);
+    ctx2.imageSmoothingEnabled = false;
+    ctx2.drawImage(state.pxCanvas, ab.sx, ab.sy, ab.w, ab.h, 0, 0, ab.w * 2, ab.h * 2);
+  }
+
+  function renderFullSheetPreview() {
+    if (!state.hasProject || !state.pxCanvas) return;
+    const cv1 = document.getElementById('sheet-cv-1x');
+    const cv2 = document.getElementById('sheet-cv-2x');
+    const sw = state.pxCanvas.width;
+    const sh = state.pxCanvas.height;
+    if (cv1.width !== sw || cv1.height !== sh) {
+      cv1.width = sw;
+      cv1.height = sh;
+    }
+    if (cv2.width !== sw * 2 || cv2.height !== sh * 2) {
+      cv2.width = sw * 2;
+      cv2.height = sh * 2;
+    }
+    const ctx1 = cv1.getContext('2d');
+    fillCanvasBackground(ctx1, 0, 0, sw, sh, 6);
+    ctx1.imageSmoothingEnabled = false;
+    ctx1.drawImage(state.pxCanvas, 0, 0);
+
+    const ctx2 = cv2.getContext('2d');
+    fillCanvasBackground(ctx2, 0, 0, sw * 2, sh * 2, 12);
+    ctx2.imageSmoothingEnabled = false;
+    ctx2.drawImage(state.pxCanvas, 0, 0, sw, sh, 0, 0, sw * 2, sh * 2);
+  }
+
+  // 動畫計時循環
+  function animLoop(ts) {
+    if (state.hasProject && prefs.fps > 0) {
+      const interval = 1000 / prefs.fps;
+      if (ts - state.lastAnimTick >= interval) {
+        state.lastAnimTick = ts;
+        state.animFrame = (state.animFrame + 1) % Math.max(1, state.cols);
+        renderMiniPreview();
+      }
+    }
+    requestAnimationFrame(animLoop);
+  }
+  requestAnimationFrame(animLoop);
+// --- 觸控與滑鼠手勢控制 ---
+  const gesture = {
+    mode: 'none', // 'none' | 'single' | 'pinch' | 'three' | 'locked'
+    activeCanvas: null,
+    isRef: false,
+    startClientX: 0,
+    startClientY: 0,
+    moved: false,
+
+    // 單指筆畫與圈選暫存
+    strokeSnap: null,
+    strokeChanges: null, // Map
+    marqueeStartPt: null,
+    circleDragging: false,
+    circleStartPt: null,
+
+    // 雙指捏合暫存
+    pinchStartDist: 1,
+    pinchStartZoom: 1,
+    pinchAnchorCellX: 0,
+    pinchAnchorCellY: 0,
+
+    // 三指拖曳暫存
+    threeStartMidX: 0,
+    threeStartMidY: 0,
+    threeMode: 'none', // 'float' | 'mirror'
+    threeOrigFloatX: 0,
+    threeOrigFloatY: 0,
+    threeOrigMirrorX: 0,
+    threeOrigMirrorY: 0
+  };
+
+  function clientToCellFloat(canvas, clientX, clientY) {
+    const rect = canvas.getBoundingClientRect();
+    const x = clientX - rect.left;
+    const y = clientY - rect.top;
+    const m = getViewMetrics(canvas);
+    return {
+      fx: (x - m.originX) / m.scale,
+      fy: (y - m.originY) / m.scale,
+      scale: m.scale
+    };
+  }
+
+  function clientToCellInt(canvas, clientX, clientY) {
+    const { fx, fy } = clientToCellFloat(canvas, clientX, clientY);
+    const { w, h } = getCellBounds();
+    return {
+      x: Math.max(0, Math.min(w - 1, Math.floor(fx))),
+      y: Math.max(0, Math.min(h - 1, Math.floor(fy)))
+    };
+  }
+
+  function cancelSingleFingerAction() {
+    if (gesture.mode !== 'single') return;
+    if (gesture.strokeSnap) {
+      putCellSnapshot(gesture.strokeSnap);
+      gesture.strokeSnap = null;
+      gesture.strokeChanges = null;
+    }
+    gesture.circleDragging = false;
+    gesture.circleStartPt = null;
+    gesture.marqueeStartPt = null;
+    requestRender();
+  }
+
+  function onSingleStart(canvas, isRef, clientX, clientY) {
+    if (!state.hasProject) return;
+    gesture.mode = 'single';
+    gesture.activeCanvas = canvas;
+    gesture.isRef = isRef;
+    gesture.startClientX = clientX;
+    gesture.startClientY = clientY;
+    gesture.moved = false;
+
+    const pt = clientToCellInt(canvas, clientX, clientY);
+    state.curX = pt.x;
+    state.curY = pt.y;
+    state.lastSwatchPaint = null;
+
+    if (!isRef) {
+      if (state.tool === 'brush') {
+        if (state.floating) commitFloating();
+        gesture.strokeSnap = getCellSnapshot();
+        gesture.strokeChanges = new Map();
+        paintAtCellPoint(pt.x, pt.y, state.penColor, gesture.strokeChanges);
+      } else if (state.tool === 'circle') {
+        if (state.floating) commitFloating();
+        gesture.circleStartPt = state.circleStart ? { ...state.circleStart } : { x: pt.x, y: pt.y };
+        gesture.circleDragging = false;
+      } else if (state.tool === 'marquee') {
+        if (state.floating) commitFloating();
+        gesture.marqueeStartPt = { x: pt.x, y: pt.y };
+      }
+    }
+
+    refreshSampleColors();
+    updateUIState();
+    requestRender();
+  }
+
+  function onSingleMove(clientX, clientY) {
+    if (gesture.mode !== 'single' || !gesture.activeCanvas || !state.hasProject) return;
+    const dx = clientX - gesture.startClientX;
+    const dy = clientY - gesture.startClientY;
+    if (Math.hypot(dx, dy) > 4) gesture.moved = true;
+
+    const pt = clientToCellInt(gesture.activeCanvas, clientX, clientY);
+    const posChanged = (pt.x !== state.curX || pt.y !== state.curY);
+    state.curX = pt.x;
+    state.curY = pt.y;
+
+    if (!gesture.isRef) {
+      if (state.tool === 'brush' && gesture.strokeChanges) {
+        if (posChanged) {
+          paintAtCellPoint(pt.x, pt.y, state.penColor, gesture.strokeChanges);
+        }
+      } else if (state.tool === 'circle' && gesture.circleStartPt) {
+        if (posChanged || gesture.moved) {
+          gesture.circleDragging = true;
+        }
+      } else if (state.tool === 'marquee' && gesture.marqueeStartPt) {
+        if (posChanged || gesture.moved) {
+          const x0 = Math.min(gesture.marqueeStartPt.x, pt.x);
+          const y0 = Math.min(gesture.marqueeStartPt.y, pt.y);
+          const x1 = Math.max(gesture.marqueeStartPt.x, pt.x);
+          const y1 = Math.max(gesture.marqueeStartPt.y, pt.y);
+          state.selection = { x: x0, y: y0, w: x1 - x0 + 1, h: y1 - y0 + 1 };
+        }
+      }
+    }
+
+    if (posChanged) refreshSampleColors();
+    updateUIState();
+    requestRender();
+  }
+
+  function onSingleEnd() {
+    if (gesture.mode !== 'single' || !state.hasProject) {
+      gesture.mode = 'none';
+      return;
+    }
+
+    if (!gesture.isRef) {
+      if (state.tool === 'brush' && gesture.strokeChanges) {
+        const changes = Array.from(gesture.strokeChanges.values()).filter(c => c.before !== c.after);
+        gesture.strokeSnap = null;
+        gesture.strokeChanges = null;
+        if (changes.length > 0) pushHistory(changes);
+      } else if (state.tool === 'circle') {
+        if (gesture.circleDragging && gesture.circleStartPt) {
+          applyCircle(gesture.circleStartPt, { x: state.curX, y: state.curY });
+        } else {
+          state.circleStart = { x: state.curX, y: state.curY };
+          showToast('已定起點：移動後按『圓：完成』');
+        }
+        gesture.circleDragging = false;
+        gesture.circleStartPt = null;
+      } else if (state.tool === 'bucket') {
+        if (state.floating) commitFloating();
+        applyBucket(state.curX, state.curY);
+      } else if (state.tool === 'marquee') {
+        if (!gesture.moved) {
+          state.selection = null;
+        }
+        gesture.marqueeStartPt = null;
+      }
+    }
+
+    gesture.mode = 'none';
+    updateUIState();
+    requestRender();
+  }
+
+  function setupCanvasGestures(canvas, isRef) {
+    // 觸控事件
+    canvas.addEventListener('touchstart', (e) => {
+      e.preventDefault();
+      closeToolPopover();
+      if (!state.hasProject) return;
+
+      const tCount = e.touches.length;
+      if (tCount === 1 && gesture.mode === 'none') {
+        const t = e.touches[0];
+        onSingleStart(canvas, isRef, t.clientX, t.clientY);
+      } else if (tCount === 2) {
+        cancelSingleFingerAction();
+        gesture.mode = 'pinch';
+        gesture.activeCanvas = canvas;
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const midX = (t0.clientX + t1.clientX) / 2;
+        const midY = (t0.clientY + t1.clientY) / 2;
+        gesture.pinchStartDist = Math.max(10, Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY));
+        gesture.pinchStartZoom = state.zoom;
+        const cf = clientToCellFloat(canvas, midX, midY);
+        gesture.pinchAnchorCellX = cf.fx;
+        gesture.pinchAnchorCellY = cf.fy;
+      } else if (tCount >= 3) {
+        cancelSingleFingerAction();
+        gesture.mode = 'three';
+        gesture.activeCanvas = canvas;
+        const midX = (e.touches[0].clientX + e.touches[1].clientX + e.touches[2].clientX) / 3;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
+        gesture.threeStartMidX = midX;
+        gesture.threeStartMidY = midY;
+
+        if (state.floating || state.selection) {
+          if (!state.floating) startFloatingFromSelection(false);
+          gesture.threeMode = 'float';
+          gesture.threeOrigFloatX = state.floating.x;
+          gesture.threeOrigFloatY = state.floating.y;
+        } else if (state.mirrorMode !== 'off') {
+          gesture.threeMode = 'mirror';
+          gesture.threeOrigMirrorX = state.mirrorX;
+          gesture.threeOrigMirrorY = state.mirrorY;
+        } else {
+          gesture.threeMode = 'none';
+          showToast('三指拖曳：先圈選範圍，或打開鏡像');
+        }
+      }
+    }, { passive: false });
+
+    canvas.addEventListener('touchmove', (e) => {
+      e.preventDefault();
+      if (!state.hasProject) return;
+      const tCount = e.touches.length;
+
+      if (gesture.mode === 'single' && tCount === 1) {
+        const t = e.touches[0];
+        onSingleMove(t.clientX, t.clientY);
+      } else if (gesture.mode === 'pinch' && tCount === 2) {
+        const t0 = e.touches[0];
+        const t1 = e.touches[1];
+        const midX = (t0.clientX + t1.clientX) / 2;
+        const midY = (t0.clientY + t1.clientY) / 2;
+        const dist = Math.max(10, Math.hypot(t1.clientX - t0.clientX, t1.clientY - t0.clientY));
+        const newZoom = Math.max(1, Math.min(16, gesture.pinchStartZoom * (dist / gesture.pinchStartDist)));
+        state.zoom = newZoom;
+
+        const rect = canvas.getBoundingClientRect();
+        const localX = midX - rect.left;
+        const localY = midY - rect.top;
+        const m = getViewMetrics(canvas);
+        state.panX = gesture.pinchAnchorCellX - (localX - m.cssW / 2) / m.scale;
+        state.panY = gesture.pinchAnchorCellY - (localY - m.cssH / 2) / m.scale;
+        clampView();
+        updateStatusText();
+        requestRender();
+      } else if (gesture.mode === 'three' && tCount >= 3) {
+        if (gesture.threeMode === 'none') return;
+        const midX = (e.touches[0].clientX + e.touches[1].clientX + e.touches[2].clientX) / 3;
+        const midY = (e.touches[0].clientY + e.touches[1].clientY + e.touches[2].clientY) / 3;
+        const m = getViewMetrics(canvas);
+        const dCellX = (midX - gesture.threeStartMidX) / m.scale;
+        const dCellY = (midY - gesture.threeStartMidY) / m.scale;
+
+        if (gesture.threeMode === 'float' && state.floating) {
+          state.floating.x = gesture.threeOrigFloatX + Math.round(dCellX);
+          state.floating.y = gesture.threeOrigFloatY + Math.round(dCellY);
+          state.selection = {
+            x: state.floating.x,
+            y: state.floating.y,
+            w: state.floating.w,
+            h: state.floating.h
+          };
+          renderFloatingToCell();
+          updateUIState();
+          requestRender();
+        } else if (gesture.threeMode === 'mirror') {
+          const { w, h } = getCellBounds();
+          if (state.mirrorMode === 'h' || state.mirrorMode === 'hv') {
+            const nx = Math.round((gesture.threeOrigMirrorX + dCellX) * 2) / 2;
+            state.mirrorX = Math.max(0.5, Math.min(w - 0.5, nx));
+          }
+          if (state.mirrorMode === 'v' || state.mirrorMode === 'hv') {
+            const ny = Math.round((gesture.threeOrigMirrorY + dCellY) * 2) / 2;
+            state.mirrorY = Math.max(0.5, Math.min(h - 0.5, ny));
+          }
+          requestRender();
+        }
+      }
+    }, { passive: false });
+
+    const handleTouchEnd = (e) => {
+      e.preventDefault();
+      if (e.touches.length === 0) {
+        if (gesture.mode === 'single') {
+          onSingleEnd();
+        } else {
+          gesture.mode = 'none';
+        }
+      } else {
+        if (gesture.mode === 'single') cancelSingleFingerAction();
+        gesture.mode = 'locked';
+      }
+    };
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
+
+    // 桌機滑鼠支援
+    let mouseDown = false;
+    canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      closeToolPopover();
+      mouseDown = true;
+      onSingleStart(canvas, isRef, e.clientX, e.clientY);
     });
     window.addEventListener('mousemove', (e) => {
-      if (!mouseDown) return;
-      if (currentTool === 'pan') {
-        panX = panStartOffset.x + (e.clientX - pinchStartCenter.x);
-        panY = panStartOffset.y + (e.clientY - pinchStartCenter.y);
-        updateTransform();
-        return;
-      }
-      if (isDrawing && (currentTool === 'pen' || currentTool === 'eraser')) {
-        const pt = getPixelCoords(e.clientX, e.clientY);
-        if (lastPt) drawLine(lastPt.x, lastPt.y, pt.x, pt.y);
-        lastPt = pt;
-      }
+      if (!mouseDown || gesture.activeCanvas !== canvas) return;
+      onSingleMove(e.clientX, e.clientY);
     });
     window.addEventListener('mouseup', () => {
-      if (isDrawing) {
-        isDrawing = false;
-        lastPt = null;
-        saveHistory(true);
-      }
+      if (!mouseDown || gesture.activeCanvas !== canvas) return;
       mouseDown = false;
+      onSingleEnd();
     });
 
-    function handleSinglePointAction(x, y) {
-      if (x < 0 || y < 0 || x >= spriteSize || y >= spriteSize) return;
+    // 桌機滾輪縮放
+    canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      if (!state.hasProject) return;
+      const cf = clientToCellFloat(canvas, e.clientX, e.clientY);
+      const factor = e.deltaY < 0 ? 1.15 : (1 / 1.15);
+      state.zoom = Math.max(1, Math.min(16, state.zoom * factor));
+      const rect = canvas.getBoundingClientRect();
+      const m = getViewMetrics(canvas);
+      state.panX = cf.fx - (e.clientX - rect.left - m.cssW / 2) / m.scale;
+      state.panY = cf.fy - (e.clientY - rect.top - m.cssH / 2) / m.scale;
+      clampView();
+      updateStatusText();
+      requestRender();
+    }, { passive: false });
+  }
 
-      if (currentTool === 'eyedropper') {
-        const p = ctx.getImageData(x, y, 1, 1).data;
-        if (p[3] > 0) {
-          selectColor(rgbToHex(p[0], p[1], p[2]));
-        }
-        return;
-      }
+  setupCanvasGestures(refCv, true);
+  setupCanvasGestures(pxCv, false);
 
-      if (currentTool === 'bucket') {
-        floodFill(x, y, hexToRgba(currentColor), 15);
-        saveHistory(true);
-        return;
-      }
+  // 防止浮動按鈕與工具列觸控穿透
+  document.querySelectorAll('.stop-touch').forEach(el => {
+    el.addEventListener('touchstart', (e) => e.stopPropagation(), { passive: true });
+    el.addEventListener('mousedown', (e) => e.stopPropagation());
+  });
 
-      if (currentTool === 'magicErase') {
-        // Erase contiguous background (with slight tolerance for compression artifacts)
-        floodFill(x, y, [0, 0, 0, 0], 45);
-        saveHistory(true);
-        return;
-      }
+  // 阻擋 iOS Safari 雙指頁面縮放
+  window.addEventListener('gesturestart', (e) => e.preventDefault(), { passive: false });
+  window.addEventListener('gesturechange', (e) => e.preventDefault(), { passive: false });
+  window.addEventListener('gestureend', (e) => e.preventDefault(), { passive: false });
+  window.addEventListener('resize', () => requestRender());
 
-      if (currentTool === 'pen' || currentTool === 'eraser') {
-        isDrawing = true;
-        lastPt = { x, y };
-        plotPixel(x, y);
+  // --- 十字鍵與虛擬鍵邏輯 ---
+  function stepDirection(dx, dy) {
+    if (!state.hasProject) return;
+    const { w, h } = getCellBounds();
+
+    // 1. 按住「塗」時：移動游標並沿路塗（整次按住算一步歷史）
+    if (state.holdingBigPaint && (state.tool === 'select' || state.tool === 'brush') && !state.floating) {
+      state.curX = Math.max(0, Math.min(w - 1, state.curX + dx));
+      state.curY = Math.max(0, Math.min(h - 1, state.curY + dy));
+      if (state.holdPaintChanges) {
+        paintAtCellPoint(state.curX, state.curY, state.penColor, state.holdPaintChanges);
       }
+      refreshSampleColors();
+      updateUIState();
+      requestRender();
+      return;
     }
 
-    function getTouchDist(t1, t2) {
-      return Math.hypot(t2.clientX - t1.clientX, t2.clientY - t1.clientY);
-    }
-    function getTouchCenter(t1, t2) {
-      return { x: (t1.clientX + t2.clientX) / 2, y: (t1.clientY + t2.clientY) / 2 };
-    }
-
-    // UI Event Listeners
-    function setTool(toolName) {
-      currentTool = toolName;
-      document.querySelectorAll('.tool-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.dataset.tool === toolName);
-      });
+    // 2. 有浮起內容，或「圈選」工具下已有圈選：移動圈選內容
+    if (state.floating || (state.tool === 'marquee' && state.selection)) {
+      moveFloatingBy(dx, dy);
+      return;
     }
 
-    document.querySelectorAll('.tool-btn').forEach(btn => {
-      btn.addEventListener('click', () => setTool(btn.dataset.tool));
+    // 3. 「畫筆」工具：移動並在新位置塗一點（每次一步）
+    if (state.tool === 'brush') {
+      state.curX = Math.max(0, Math.min(w - 1, state.curX + dx));
+      state.curY = Math.max(0, Math.min(h - 1, state.curY + dy));
+      const changes = paintAtCellPoint(state.curX, state.curY, state.penColor);
+      if (changes.length > 0) pushHistory(changes);
+      refreshSampleColors();
+      updateUIState();
+      requestRender();
+      return;
+    }
+
+    // 4. 其他：只移動游標
+    state.curX = Math.max(0, Math.min(w - 1, state.curX + dx));
+    state.curY = Math.max(0, Math.min(h - 1, state.curY + dy));
+    state.lastSwatchPaint = null;
+    refreshSampleColors();
+    updateUIState();
+    requestRender();
+  }
+
+  function bindDpadButton(btnId, dx, dy) {
+    const btn = document.getElementById(btnId);
+    let delayTimer = null;
+    let repeatTimer = null;
+
+    const clearTimers = () => {
+      if (delayTimer) { clearTimeout(delayTimer); delayTimer = null; }
+      if (repeatTimer) { clearInterval(repeatTimer); repeatTimer = null; }
+    };
+
+    const startPress = (e) => {
+      e.preventDefault();
+      clearTimers();
+      stepDirection(dx, dy);
+      delayTimer = setTimeout(() => {
+        repeatTimer = setInterval(() => {
+          stepDirection(dx, dy);
+        }, 90);
+      }, 320);
+    };
+
+    btn.addEventListener('touchstart', startPress, { passive: false });
+    btn.addEventListener('touchend', clearTimers);
+    btn.addEventListener('touchcancel', clearTimers);
+    btn.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      startPress(e);
     });
+    window.addEventListener('mouseup', clearTimers);
+  }
 
-    document.querySelectorAll('.size-btn[data-size]').forEach(btn => {
-      btn.addEventListener('click', () => {
-        brushSize = parseInt(btn.dataset.size, 10);
-        document.querySelectorAll('.size-btn[data-size]').forEach(b => b.classList.remove('active'));
-        btn.classList.add('active');
-      });
-    });
+  bindDpadButton('vk-up', 0, -1);
+  bindDpadButton('vk-down', 0, 1);
+  bindDpadButton('vk-left', -1, 0);
+  bindDpadButton('vk-right', 1, 0);
 
-    document.getElementById('colorPicker').addEventListener('input', (e) => {
-      selectColor(e.target.value);
-    });
+  // 抓／放下
+  document.getElementById('vk-grab').addEventListener('click', () => {
+    if (!state.hasProject) return;
+    if (state.floating) {
+      commitFloating();
+    } else {
+      startFloatingFromSelection(true);
+      showToast('抓住了：用十字鍵移動，再按『放下』寫入');
+    }
+  });
 
-    document.getElementById('gridToggleBtn').addEventListener('click', (e) => {
-      showGrid = !showGrid;
-      gridOverlay.classList.toggle('visible', showGrid);
-      e.target.classList.toggle('active', showGrid);
-    });
+  // 上一步／下一步
+  document.getElementById('vk-undo').addEventListener('click', doUndo);
+  document.getElementById('vk-redo').addEventListener('click', doRedo);
 
-    document.getElementById('resetViewBtn').addEventListener('click', resetView);
-    document.getElementById('undoBtn').addEventListener('click', undo);
-    document.getElementById('redoBtn').addEventListener('click', redo);
+  // 吸色
+  function pickCursorColor() {
+    if (!state.hasProject) return;
+    const { sx, sy } = getCellBounds();
+    const cInt = getSheetPixelInt(sx + state.curX, sy + state.curY);
+    if (cInt === 0) {
+      state.penColor = null;
+      showToast('吸到透明');
+    } else {
+      const hex = intToHex(cInt);
+      state.penColor = hex;
+      addRecentColor(hex);
+      showToast(`吸到 ${hex}`);
+    }
+    refreshSampleColors();
+    refreshUsedColors();
+    updateUIState();
+    requestRender();
+    scheduleSave();
+  }
+  document.getElementById('vk-pick').addEventListener('click', pickCursorColor);
 
-    document.getElementById('toggleConvertBtn').addEventListener('click', () => {
-      document.getElementById('convertDrawer').classList.toggle('open');
-    });
-
-    document.getElementById('fileInput').addEventListener('change', (e) => {
-      const file = e.target.files[0];
-      if (!file) return;
-      const reader = new FileReader();
-      reader.onload = (ev) => {
-        const img = new Image();
-        img.onload = () => {
-          sourceImage = img;
-          convertImageToSprite();
-          document.getElementById('convertDrawer').classList.add('open');
-        };
-        img.src = ev.target.result;
-      };
-      reader.readAsDataURL(file);
-    });
-
-    document.getElementById('reconvertBtn').addEventListener('click', () => {
-      if (sourceImage) {
-        convertImageToSprite();
+  // 大鍵（支援按住連塗與單擊動作）
+  const bigActionBtn = document.getElementById('btn-big-action');
+  function triggerBigButtonPress() {
+    if (!state.hasProject) return;
+    if (state.floating) {
+      commitFloating();
+      return;
+    }
+    if (state.tool === 'bucket') {
+      applyBucket(state.curX, state.curY);
+      return;
+    }
+    if (state.tool === 'circle') {
+      if (!state.circleStart) {
+        state.circleStart = { x: state.curX, y: state.curY };
+        showToast('已定起點：移動後按『圓：完成』');
+        updateUIState();
+        requestRender();
       } else {
-        const targetSize = parseInt(document.getElementById('resSelect').value, 10);
-        initCanvas(targetSize, true);
+        applyCircle(state.circleStart, { x: state.curX, y: state.curY });
       }
-      document.getElementById('convertDrawer').classList.remove('open');
-    });
+      return;
+    }
+    if (state.tool === 'marquee') {
+      const { w, h } = getCellBounds();
+      state.selection = { x: 0, y: 0, w, h };
+      updateUIState();
+      requestRender();
+      return;
+    }
+    // 選格或畫筆：塗色並啟動按住連塗
+    state.holdingBigPaint = true;
+    state.holdPaintChanges = new Map();
+    paintAtCellPoint(state.curX, state.curY, state.penColor, state.holdPaintChanges);
+    requestRender();
+  }
 
-    document.getElementById('clearCanvasBtn').addEventListener('click', () => {
-      ctx.clearRect(0, 0, spriteSize, spriteSize);
-      saveHistory(true);
-    });
+  function finishBigButtonHold() {
+    if (!state.holdingBigPaint) return;
+    state.holdingBigPaint = false;
+    if (state.holdPaintChanges) {
+      const changes = Array.from(state.holdPaintChanges.values()).filter(c => c.before !== c.after);
+      state.holdPaintChanges = null;
+      if (changes.length > 0) pushHistory(changes);
+    }
+    updateUIState();
+    requestRender();
+  }
 
-    // Export Logic (1x Raw Game Sprite & 512px Crisp Upscaled)
-    function generateUpscaledDataURL(targetPx) {
-      const outCanvas = document.createElement('canvas');
-      outCanvas.width = targetPx;
-      outCanvas.height = targetPx;
-      const outCtx = outCanvas.getContext('2d');
-      outCtx.imageSmoothingEnabled = false;
-      outCtx.drawImage(spriteCanvas, 0, 0, targetPx, targetPx);
-      return outCanvas.toDataURL('image/png');
+  bigActionBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault();
+    triggerBigButtonPress();
+  }, { passive: false });
+  bigActionBtn.addEventListener('touchend', finishBigButtonHold);
+  bigActionBtn.addEventListener('touchcancel', finishBigButtonHold);
+  bigActionBtn.addEventListener('mousedown', (e) => {
+    if (e.button !== 0) return;
+    triggerBigButtonPress();
+  });
+  window.addEventListener('mouseup', finishBigButtonHold);
+
+  // --- 工具選單浮層 ---
+  const toolPopover = document.getElementById('tool-popover');
+  const vkToolBtn = document.getElementById('vk-tool');
+
+  function closeToolPopover() {
+    toolPopover.classList.add('hidden');
+  }
+
+  vkToolBtn.addEventListener('click', () => {
+    const isHidden = toolPopover.classList.contains('hidden');
+    if (!isHidden) {
+      closeToolPopover();
+      return;
+    }
+    toolPopover.classList.remove('hidden');
+    const r = vkToolBtn.getBoundingClientRect();
+    const popW = toolPopover.offsetWidth || 210;
+    const popH = toolPopover.offsetHeight || 190;
+    const left = Math.max(8, Math.min(window.innerWidth - popW - 8, r.right - popW));
+    const top = Math.max(8, r.top - popH - 6);
+    toolPopover.style.left = `${left}px`;
+    toolPopover.style.top = `${top}px`;
+  });
+
+  document.querySelectorAll('#tool-popover .tool-item').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const nextTool = btn.dataset.tool;
+      if (state.floating) commitFloating();
+      state.circleStart = null;
+      state.tool = nextTool;
+      if (nextTool === 'circle') showToast('圓形：拖曳直接畫，或點一下定起點');
+      if (nextTool === 'bucket') showToast('油漆桶：點擊或放開填滿本格相連同色');
+      if (nextTool === 'marquee') showToast('圈選：拖曳拉出矩形，單點取消圈選');
+      closeToolPopover();
+      updateUIState();
+      requestRender();
+    });
+  });
+
+  document.getElementById('opt-circle-fill').addEventListener('click', () => {
+    prefs.circleFill = !prefs.circleFill;
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+  document.getElementById('opt-circle-ratio').addEventListener('click', () => {
+    prefs.circleSquare = !prefs.circleSquare;
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+  document.getElementById('opt-circle-perfect').addEventListener('click', () => {
+    prefs.circlePerfect = !prefs.circlePerfect;
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+
+  // --- 頂列與參考畫布按鈕事件 ---
+  document.getElementById('btn-prev-cell').addEventListener('click', () => stepCell(-1));
+  document.getElementById('btn-next-cell').addEventListener('click', () => stepCell(1));
+  document.getElementById('btn-reset-zoom').addEventListener('click', resetView);
+  document.getElementById('btn-cell-num').addEventListener('click', openMenu);
+  document.getElementById('btn-open-menu').addEventListener('click', openMenu);
+  document.getElementById('empty-hint-btn').addEventListener('click', openMenu);
+
+  document.getElementById('ref-mode-btn').addEventListener('click', () => {
+    const order = ['hi', 'base', 'prev', 'next'];
+    const idx = order.indexOf(prefs.refMode);
+    prefs.refMode = order[(idx + 1) % order.length];
+    savePrefs();
+    refreshSampleColors();
+    updateUIState();
+    requestRender();
+  });
+
+  document.getElementById('mini-preview-box').addEventListener('click', () => {
+    const order = [8, 12, 4, 0];
+    const idx = order.indexOf(prefs.fps);
+    prefs.fps = order[(idx + 1) % order.length];
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+
+  document.getElementById('btn-sample-scope').addEventListener('click', () => {
+    const order = ['cell', '8', '16'];
+    const idx = order.indexOf(prefs.sampleScope);
+    prefs.sampleScope = order[(idx + 1) % order.length];
+    savePrefs();
+    refreshSampleColors();
+    updateUIState();
+    requestRender();
+  });
+
+  // --- 動作列按鈕事件 ---
+  document.getElementById('act-commit').addEventListener('click', commitFloating);
+  document.getElementById('act-cancel').addEventListener('click', cancelFloating);
+  document.getElementById('act-deselect').addEventListener('click', () => {
+    state.selection = null;
+    updateUIState();
+    requestRender();
+  });
+  document.getElementById('act-select-all').addEventListener('click', () => {
+    if (!state.hasProject) return;
+    if (state.floating) commitFloating();
+    const { w, h } = getCellBounds();
+    state.selection = { x: 0, y: 0, w, h };
+    updateUIState();
+    requestRender();
+  });
+  document.getElementById('act-clear-sel').addEventListener('click', () => {
+    if (!state.hasProject) return;
+    if (state.floating) {
+      state.floating.data.fill(0);
+      commitFloating();
+      return;
+    }
+    if (!state.selection) {
+      showToast('請先圈選範圍');
+      return;
+    }
+    const { sx, sy, w, h } = getCellBounds();
+    const snap = getCellSnapshot();
+    const orig = new Uint32Array(snap);
+    const sel = state.selection;
+    for (let ry = 0; ry < sel.h; ry++) {
+      for (let rx = 0; rx < sel.w; rx++) {
+        const cx = sel.x + rx;
+        const cy = sel.y + ry;
+        if (cx >= 0 && cx < w && cy >= 0 && cy < h) {
+          snap[cy * w + cx] = 0;
+        }
+      }
+    }
+    const changes = [];
+    for (let y = 0; y < h; y++) {
+      for (let x = 0; x < w; x++) {
+        const idx = y * w + x;
+        if (orig[idx] !== snap[idx]) {
+          changes.push({ x: sx + x, y: sy + y, before: orig[idx], after: snap[idx] });
+        }
+      }
+    }
+    if (changes.length > 0) {
+      putCellSnapshot(snap);
+      pushHistory(changes);
+      requestRender();
+    }
+  });
+
+  function doCopySelection() {
+    if (!state.hasProject) return;
+    if (state.floating) {
+      state.clipboard = {
+        x: state.floating.x,
+        y: state.floating.y,
+        w: state.floating.w,
+        h: state.floating.h,
+        data: new Uint32Array(state.floating.data)
+      };
+      showToast(`已複製 ${state.clipboard.w}×${state.clipboard.h}`);
+      updateUIState();
+      return;
+    }
+    if (!state.selection) {
+      showToast('請先圈選要複製的範圍');
+      return;
+    }
+    const { w, h } = getCellBounds();
+    const sel = state.selection;
+    const snap = getCellSnapshot();
+    const data = new Uint32Array(sel.w * sel.h);
+    for (let ry = 0; ry < sel.h; ry++) {
+      for (let rx = 0; rx < sel.w; rx++) {
+        const cx = sel.x + rx;
+        const cy = sel.y + ry;
+        if (cx >= 0 && cx < w && cy >= 0 && cy < h) {
+          data[ry * sel.w + rx] = snap[cy * w + cx];
+        }
+      }
+    }
+    state.clipboard = { x: sel.x, y: sel.y, w: sel.w, h: sel.h, data };
+    showToast(`已複製 ${sel.w}×${sel.h}`);
+    updateUIState();
+  }
+
+  function doPasteClipboard() {
+    if (!state.hasProject) return;
+    if (!state.clipboard) {
+      showToast('剪貼簿是空的');
+      return;
+    }
+    if (state.floating) commitFloating();
+    const origSnap = getCellSnapshot();
+    const cb = state.clipboard;
+    state.selection = { x: cb.x, y: cb.y, w: cb.w, h: cb.h };
+    state.floating = {
+      x: cb.x,
+      y: cb.y,
+      w: cb.w,
+      h: cb.h,
+      data: new Uint32Array(cb.data),
+      origSnap,
+      baseUnder: new Uint32Array(origSnap),
+      origSel: null
+    };
+    renderFloatingToCell();
+    updateUIState();
+    requestRender();
+  }
+
+  document.getElementById('act-copy').addEventListener('click', doCopySelection);
+  document.getElementById('act-paste').addEventListener('click', doPasteClipboard);
+  document.getElementById('act-restore-ref').addEventListener('click', restoreFromRef);
+  document.getElementById('act-flip-h').addEventListener('click', () => flipFloating('h'));
+  document.getElementById('act-flip-v').addEventListener('click', () => flipFloating('v'));
+  document.getElementById('act-center-h').addEventListener('click', () => centerFloating('h'));
+  document.getElementById('act-center-v').addEventListener('click', () => centerFloating('v'));
+
+  document.getElementById('act-mirror').addEventListener('click', () => {
+    const order = ['off', 'h', 'v', 'hv'];
+    const idx = order.indexOf(state.mirrorMode);
+    state.mirrorMode = order[(idx + 1) % order.length];
+    const names = { off: '鏡像已關閉', h: '鏡像：左右對稱', v: '鏡像：上下對稱', hv: '鏡像：四向對稱' };
+    showToast(names[state.mirrorMode]);
+    updateUIState();
+    requestRender();
+  });
+
+  // --- 選單與專案管理 ---
+  const menuBackdrop = document.getElementById('menu-backdrop');
+
+  async function openMenu() {
+    closeToolPopover();
+    await refreshProjectListUI();
+    buildCellGridAndSelects();
+    updateUIState();
+    renderFullSheetPreview();
+    menuBackdrop.classList.remove('hidden');
+  }
+
+  function closeMenu() {
+    menuBackdrop.classList.add('hidden');
+  }
+
+  document.getElementById('btn-close-menu').addEventListener('click', closeMenu);
+  menuBackdrop.addEventListener('click', (e) => {
+    if (e.target === menuBackdrop) closeMenu();
+  });
+
+  function buildCellGridAndSelects() {
+    const grid = document.getElementById('cell-grid');
+    const srcSel = document.getElementById('sel-copy-src');
+    const dstSel = document.getElementById('sel-copy-dst');
+    grid.innerHTML = '';
+    srcSel.innerHTML = '';
+    dstSel.innerHTML = '';
+
+    if (!state.hasProject) return;
+    grid.style.gridTemplateColumns = `repeat(${state.cols}, minmax(44px, 1fr))`;
+
+    for (let r = 0; r < state.rows; r++) {
+      for (let c = 0; c < state.cols; c++) {
+        const label = `${r + 1}-${c + 1}`;
+        const btn = document.createElement('button');
+        btn.textContent = label;
+        if (r === state.cellRow && c === state.cellCol) btn.classList.add('active');
+        btn.addEventListener('click', () => {
+          switchToCell(c, r);
+          closeMenu();
+        });
+        grid.appendChild(btn);
+
+        const opt1 = new Option(label, `${c},${r}`);
+        const opt2 = new Option(label, `${c},${r}`);
+        if (r === state.cellRow && c === state.cellCol) {
+          opt1.selected = true;
+          opt2.selected = true;
+        }
+        srcSel.add(opt1);
+        dstSel.add(opt2);
+      }
+    }
+  }
+
+  document.getElementById('btn-copy-cell-exec').addEventListener('click', () => {
+    if (!state.hasProject) return;
+    const [sc, sr] = document.getElementById('sel-copy-src').value.split(',').map(Number);
+    const [dc, dr] = document.getElementById('sel-copy-dst').value.split(',').map(Number);
+    const mode = document.getElementById('sel-copy-mode').value;
+    copyEntireCellTo(sc, sr, dc, dr, mode);
+  });
+
+  async function refreshProjectListUI() {
+    const listEl = document.getElementById('proj-list');
+    const nameInp = document.getElementById('inp-proj-name');
+    nameInp.value = state.projName || '';
+    listEl.innerHTML = '';
+
+    const projects = await dbGetAllProjects();
+    for (const p of projects) {
+      const row = document.createElement('div');
+      row.className = 'proj-item' + (p.id === state.projId ? ' current' : '');
+      const title = document.createElement('span');
+      title.className = 'proj-item-name';
+      title.textContent = `${p.name || '未命名'} (${p.cell}px)`;
+      row.appendChild(title);
+
+      const btnOpen = document.createElement('button');
+      btnOpen.textContent = '開啟';
+      btnOpen.addEventListener('click', async () => {
+        await saveCurrentProjectNow(true);
+        await loadProjectRecord(p);
+        closeMenu();
+      });
+
+      const btnRen = document.createElement('button');
+      btnRen.textContent = '改名';
+      btnRen.addEventListener('click', async () => {
+        const nextName = window.prompt('輸入新專案名稱：', p.name || '');
+        if (nextName && nextName.trim()) {
+          p.name = nextName.trim();
+          p.updatedAt = Date.now();
+          await dbPutProject(p);
+          if (p.id === state.projId) {
+            state.projName = p.name;
+            nameInp.value = p.name;
+          }
+          await refreshProjectListUI();
+        }
+      });
+
+      const btnDel = document.createElement('button');
+      btnDel.className = 'danger';
+      btnDel.textContent = '刪除';
+      btnDel.addEventListener('click', async () => {
+        if (!window.confirm(`確定要刪除專案「${p.name}」嗎？`)) return;
+        await dbDeleteProject(p.id);
+        if (p.id === state.projId) {
+          const rest = await dbGetAllProjects();
+          if (rest.length > 0) {
+            await loadProjectRecord(rest[0]);
+          } else {
+            clearToEmptyProject();
+          }
+        }
+        await refreshProjectListUI();
+      });
+
+      row.appendChild(btnOpen);
+      row.appendChild(btnRen);
+      row.appendChild(btnDel);
+      listEl.appendChild(row);
+    }
+  }
+
+  document.getElementById('inp-proj-name').addEventListener('change', (e) => {
+    const val = e.target.value.trim() || '未命名專案';
+    state.projName = val;
+    scheduleSave();
+    refreshProjectListUI();
+  });
+
+  document.getElementById('btn-new-proj-blank').addEventListener('click', async () => {
+    await saveCurrentProjectNow(true);
+    state.projId = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    state.projName = '新專案 ' + new Date().toLocaleTimeString('zh-Hant', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    document.getElementById('inp-proj-name').value = state.projName;
+    document.getElementById('file-hi').value = '';
+    document.getElementById('file-px').value = '';
+    document.getElementById('file-base').value = '';
+    document.getElementById('sec-load-images').scrollIntoView({ behavior: 'smooth' });
+    showToast('請在下方選擇圖片並按「套用這組圖」');
+  });
+
+  function clearToEmptyProject() {
+    state.projId = null;
+    state.projName = '未命名專案';
+    state.hasProject = false;
+    state.hiCanvas = null;
+    state.pxCanvas = null;
+    state.pxCtx = null;
+    state.baseCanvas = null;
+    state.undoStack = [];
+    state.redoStack = [];
+    state.selection = null;
+    state.floating = null;
+    updateUIState();
+    requestRender();
+  }
+
+  async function loadProjectRecord(rec) {
+    try {
+      const [hiCv, pxCvLoaded, baseCv] = await Promise.all([
+        loadImageFromSource(rec.hiPng),
+        loadImageFromSource(rec.pxPng),
+        loadImageFromSource(rec.basePng)
+      ]);
+      if (!pxCvLoaded) {
+        showToast('專案像素圖讀取失敗');
+        return;
+      }
+      state.projId = rec.id;
+      state.projName = rec.name || '未命名專案';
+      state.cellSize = Math.max(4, Math.min(512, Number(rec.cell) || 32));
+      state.hiCanvas = hiCv;
+      state.pxCanvas = pxCvLoaded;
+      state.pxCtx = pxCvLoaded.getContext('2d');
+      state.baseCanvas = baseCv;
+      state.recents = Array.isArray(rec.recents) && rec.recents.length ? rec.recents.slice(0, 10) : ['#000000', '#ffffff'];
+      state.hasProject = true;
+      state.undoStack = [];
+      state.redoStack = [];
+      state.selection = null;
+      state.floating = null;
+      state.circleStart = null;
+      state.cellCol = 0;
+      state.cellRow = 0;
+      state.curX = 0;
+      state.curY = 0;
+
+      document.getElementById('inp-cell-size').value = state.cellSize;
+      recalcGridDimensions();
+      resetMirrorCenter();
+      resetView();
+      refreshSampleColors();
+      refreshUsedColors();
+      updateUIState();
+      try {
+        localStorage.setItem(LAST_PROJ_KEY, state.projId);
+      } catch (e) {}
+    } catch (e) {
+      showToast('載入專案時發生錯誤');
+    }
+  }
+
+  // 自動縮小高解析原圖並二值化 alpha
+  function autoShrinkHiCanvas(hiCv, targetW, targetH) {
+    const cv = document.createElement('canvas');
+    cv.width = targetW;
+    cv.height = targetH;
+    const ctx = cv.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(hiCv, 0, 0, targetW, targetH);
+
+    const imgData = ctx.getImageData(0, 0, targetW, targetH);
+    const d = imgData.data;
+    for (let i = 0; i < d.length; i += 4) {
+      if (d[i + 3] < 128) {
+        d[i] = 0; d[i + 1] = 0; d[i + 2] = 0; d[i + 3] = 0;
+      } else {
+        d[i + 3] = 255;
+      }
+    }
+    ctx.putImageData(imgData, 0, 0);
+    return cv;
+  }
+
+  document.getElementById('btn-apply-images').addEventListener('click', async () => {
+    const fHi = document.getElementById('file-hi').files[0];
+    const fPx = document.getElementById('file-px').files[0];
+    const fBase = document.getElementById('file-base').files[0];
+
+    if (!fHi && !fPx) {
+      showToast('先選一張圖');
+      return;
     }
 
-    document.getElementById('exportBtn').addEventListener('click', () => {
-      const previewUrl = generateUpscaledDataURL(512);
-      document.getElementById('exportPreviewImg').src = previewUrl;
-      document.getElementById('exportModal').classList.add('open');
-    });
+    const autoW = Math.max(4, Math.min(512, parseInt(document.getElementById('inp-auto-w').value, 10) || 128));
+    const autoH = Math.max(4, Math.min(512, parseInt(document.getElementById('inp-auto-h').value, 10) || 128));
+    const cellSz = Math.max(4, Math.min(512, parseInt(document.getElementById('inp-cell-size').value, 10) || 32));
 
-    document.getElementById('closeModalBtn').addEventListener('click', () => {
-      document.getElementById('exportModal').classList.remove('open');
-    });
-
-    document.getElementById('download1xBtn').addEventListener('click', () => {
-      const url = spriteCanvas.toDataURL('image/png');
-      triggerDownload(url, `sprite_${spriteSize}x${spriteSize}.png`);
-    });
-
-    document.getElementById('download4xBtn').addEventListener('click', () => {
-      const url = generateUpscaledDataURL(512);
-      triggerDownload(url, `sprite_${spriteSize}x${spriteSize}_upscaled512.png`);
-    });
-
-    function triggerDownload(dataUrl, filename) {
-      const a = document.createElement('a');
-      a.href = dataUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
+    let hiCv = null, pxCvNew = null, baseCv = null;
+    try {
+      if (fHi) hiCv = await loadImageFromSource(fHi);
+      if (fPx) pxCvNew = await loadImageFromSource(fPx);
+      if (fBase) baseCv = await loadImageFromSource(fBase);
+    } catch (e) {
+      showToast('圖讀不進來，換一張 PNG 或 JPG 試試');
+      return;
     }
 
-    // Boot
-    window.addEventListener('load', () => {
-      selectColor(currentColor);
-      initCanvas(128, true);
+    if (!pxCvNew && hiCv) {
+      pxCvNew = autoShrinkHiCanvas(hiCv, autoW, autoH);
+    }
+    if (!pxCvNew) {
+      showToast('圖讀不進來，換一張 PNG 或 JPG 試試');
+      return;
+    }
+
+    if (state.floating) commitFloating();
+    if (!state.projId) {
+      state.projId = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    }
+    const rawName = document.getElementById('inp-proj-name').value.trim();
+    if (!rawName || rawName === '未命名專案') {
+      const srcFile = fPx || fHi;
+      state.projName = srcFile ? srcFile.name.replace(/\.[^.]+$/, '') : '未命名專案';
+    } else {
+      state.projName = rawName;
+    }
+
+    state.cellSize = cellSz;
+    state.hiCanvas = hiCv;
+    state.pxCanvas = pxCvNew;
+    state.pxCtx = pxCvNew.getContext('2d');
+    state.baseCanvas = baseCv;
+    state.hasProject = true;
+
+    state.undoStack = [];
+    state.redoStack = [];
+    state.selection = null;
+    state.floating = null;
+    state.circleStart = null;
+    state.cellCol = 0;
+    state.cellRow = 0;
+    state.curX = 0;
+    state.curY = 0;
+
+    recalcGridDimensions();
+    resetMirrorCenter();
+    resetView();
+    refreshSampleColors();
+    refreshUsedColors();
+    updateUIState();
+    await saveCurrentProjectNow(false);
+    closeMenu();
+  });
+
+  // 顯示設定切換
+  document.getElementById('tog-vpad').addEventListener('click', () => {
+    prefs.showVpad = !prefs.showVpad;
+    savePrefs();
+    updateUIState();
+  });
+  document.getElementById('tog-grid').addEventListener('click', () => {
+    prefs.showGrid = !prefs.showGrid;
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+  document.getElementById('tog-miniprev').addEventListener('click', () => {
+    prefs.showMiniPrev = !prefs.showMiniPrev;
+    savePrefs();
+    updateUIState();
+    requestRender();
+  });
+  document.querySelectorAll('.bg-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      prefs.bg = btn.dataset.bg;
+      savePrefs();
+      updateUIState();
+      requestRender();
     });
-  </script>
+  });
+  document.querySelectorAll('.fps-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      prefs.fps = Number(btn.dataset.fps);
+      savePrefs();
+      updateUIState();
+      requestRender();
+    });
+  });
+
+  // --- 匯出與匯入 ---
+  function sanitizeFileName(name) {
+    const clean = (name || 'sprite').replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 80);
+    return clean || 'sprite';
+  }
+
+  async function shareOrDownloadBlob(blob, filename) {
+    const file = new File([blob], filename, { type: blob.type });
+    if (navigator.canShare && navigator.canShare({ files: [file] })) {
+      try {
+        await navigator.share({ files: [file], title: filename });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return; // 使用者取消分享不算錯誤
+      }
+    }
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 3000);
+  }
+
+  document.getElementById('btn-export-png').addEventListener('click', async () => {
+    if (!state.hasProject || !state.pxCanvas) {
+      showToast('目前沒有可匯出的像素圖');
+      return;
+    }
+    await saveCurrentProjectNow(true);
+    const blob = await canvasToBlob(state.pxCanvas);
+    if (!blob) return;
+    const fname = `${sanitizeFileName(state.projName)}.png`;
+    await shareOrDownloadBlob(blob, fname);
+  });
+
+  document.getElementById('btn-export-proj').addEventListener('click', async () => {
+    if (!state.hasProject || !state.pxCanvas) {
+      showToast('目前沒有可匯出的專案');
+      return;
+    }
+    await saveCurrentProjectNow(true);
+    const payload = {
+      name: state.projName,
+      cell: state.cellSize,
+      recents: state.recents,
+      hiDataUrl: state.hiCanvas ? state.hiCanvas.toDataURL('image/png') : null,
+      pxDataUrl: state.pxCanvas.toDataURL('image/png'),
+      baseDataUrl: state.baseCanvas ? state.baseCanvas.toDataURL('image/png') : null
+    };
+    const blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+    const fname = `${sanitizeFileName(state.projName)}.pixelfixer.json`;
+    await shareOrDownloadBlob(blob, fname);
+  });
+
+  document.getElementById('file-import-proj').addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    e.target.value = '';
+    if (!file) return;
+    try {
+      const txt = await file.text();
+      const data = JSON.parse(txt);
+      if (!data.pxDataUrl) throw new Error('Invalid project file');
+      await saveCurrentProjectNow(true);
+
+      const [hiCv, pxCvLoaded, baseCv] = await Promise.all([
+        loadImageFromSource(data.hiDataUrl),
+        loadImageFromSource(data.pxDataUrl),
+        loadImageFromSource(data.baseDataUrl)
+      ]);
+
+      state.projId = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      state.projName = data.name || '匯入專案';
+      state.cellSize = Math.max(4, Math.min(512, Number(data.cell) || 32));
+      state.hiCanvas = hiCv;
+      state.pxCanvas = pxCvLoaded;
+      state.pxCtx = pxCvLoaded.getContext('2d');
+      state.baseCanvas = baseCv;
+      state.recents = Array.isArray(data.recents) ? data.recents.slice(0, 10) : ['#000000', '#ffffff'];
+      state.hasProject = true;
+      state.undoStack = [];
+      state.redoStack = [];
+      state.selection = null;
+      state.floating = null;
+      state.cellCol = 0;
+      state.cellRow = 0;
+      state.curX = 0;
+      state.curY = 0;
+
+      recalcGridDimensions();
+      resetMirrorCenter();
+      resetView();
+      refreshSampleColors();
+      refreshUsedColors();
+      updateUIState();
+      await saveCurrentProjectNow(false);
+      closeMenu();
+      showToast('已匯入專案');
+    } catch (err) {
+      showToast('匯入失敗：檔案格式不正確');
+    }
+  });
+
+  // --- 桌機鍵盤快捷鍵 ---
+  window.addEventListener('keydown', (e) => {
+    const tag = (e.target && e.target.tagName) ? e.target.tagName.toLowerCase() : '';
+    if (tag === 'input' || tag === 'select' || tag === 'textarea') return;
+
+    const mod = e.metaKey || e.ctrlKey;
+    if (mod && e.key.toLowerCase() === 'z') {
+      e.preventDefault();
+      if (e.shiftKey) doRedo();
+      else doUndo();
+      return;
+    }
+    if (mod && e.key.toLowerCase() === 'c') {
+      e.preventDefault();
+      doCopySelection();
+      return;
+    }
+    if (mod && e.key.toLowerCase() === 'v') {
+      e.preventDefault();
+      doPasteClipboard();
+      return;
+    }
+
+    if (e.key === 'ArrowUp') { e.preventDefault(); stepDirection(0, -1); }
+    else if (e.key === 'ArrowDown') { e.preventDefault(); stepDirection(0, 1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); stepDirection(-1, 0); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); stepDirection(1, 0); }
+    else if (e.key === ' ' || e.key === 'Enter') {
+      e.preventDefault();
+      triggerBigButtonPress();
+      finishBigButtonHold();
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (state.floating) cancelFloating();
+      else if (state.selection) {
+        state.selection = null;
+        updateUIState();
+        requestRender();
+      }
+    } else if (e.key.toLowerCase() === 'i') {
+      e.preventDefault();
+      pickCursorColor();
+    }
+  });
+
+  // --- 生命週期自動存檔與啟動載入 ---
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveCurrentProjectNow(true);
+    }
+  });
+  window.addEventListener('pagehide', () => {
+    saveCurrentProjectNow(true);
+  });
+
+  async function initApp() {
+    updateUIState();
+    requestRender();
+    const all = await dbGetAllProjects();
+    if (all.length === 0) return;
+
+    let target = all[0];
+    try {
+      const lastId = localStorage.getItem(LAST_PROJ_KEY);
+      if (lastId) {
+        const found = all.find(p => p.id === lastId);
+        if (found) target = found;
+      }
+    } catch (e) {}
+    await loadProjectRecord(target);
+  }
+
+  initApp();
+})();
+</script>
 </body>
 </html>
