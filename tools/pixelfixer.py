@@ -96,6 +96,7 @@ class Layer(object):
         self.img = img
         self.visible = visible
         self.locked = locked
+        self.pending = False
 
 
 class Project(object):
@@ -155,12 +156,17 @@ class Project(object):
                 return i
         raise ToolError('沒有叫「%s」的圖層' % ref)
 
+    def stack_order(self):
+        """由下往上的疊圖順序（提案新增的圖層可以插在中間）。"""
+        order = getattr(self, 'order', None)
+        return order if order else list(range(len(self.layers)))
+
     def composite(self, imgs=None):
         imgs = imgs or [l.img for l in self.layers]
         out = Image.new('RGBA', (self.width, self.height), TRANSPARENT)
-        for l, img in zip(self.layers, imgs):
-            if l.visible:
-                out.alpha_composite(img)
+        for i in self.stack_order():
+            if self.layers[i].visible:
+                out.alpha_composite(imgs[i])
         return out
 
     def colors_in_use(self):
@@ -181,7 +187,8 @@ class Project(object):
         d['name'] = self.name
         d['cell'] = self.cell
         d['layers'] = [{'name': l.name, 'visible': l.visible, 'locked': l.locked,
-                        'dataUrl': encode_data_url(l.img)} for l in self.layers]
+                        'dataUrl': encode_data_url(self.layers[i].img)}
+                       for i, l in ((i, self.layers[i]) for i in self.stack_order())]
         d['pxDataUrl'] = encode_data_url(self.composite())
         d['version'] = self.version + 1
         d['updatedAt'] = int(time.time() * 1000)
@@ -234,10 +241,84 @@ class Proposal(object):
             raise ToolError('沒有提案 %s（用 list 看有哪些）' % pid)
         with open(self.path, 'r', encoding='utf-8') as f:
             self.data = json.load(f)
-        # (layerIndex, x, y) -> [before, after]
+        # 提案新增的圖層：先以空白圖層接在最上面，accept 時才真的建立
+        self.real_count = len(proj.layers)
+        proj.order = list(range(len(proj.layers)))
+        for spec in self.data.get('newLayers', []):
+            self._append_pending(spec)
+        # (layerIndex, x, y) -> [before, after]；圖層用名稱對回目前的編號（手機上可能調過順序）
         self.changes = {}
+        self.lost = 0
         for ch in self.data.get('changes', []):
-            self.changes[(ch['l'], ch['x'], ch['y'])] = [parse_color(ch['b']), parse_color(ch['a'])]
+            li = self._map_layer(ch)
+            if li is None:
+                self.lost += 1
+                continue
+            self.changes[(li, ch['x'], ch['y'])] = [parse_color(ch['b']), parse_color(ch['a'])]
+
+    def _map_layer(self, ch):
+        layers = self.proj.layers
+        lo, hi = (self.real_count, len(layers)) if ch.get('new') else (0, self.real_count)
+        li, ln = ch['l'], ch.get('ln')
+        if lo <= li < hi and (ln is None or layers[li].name == ln):
+            return li
+        for i in range(lo, hi):
+            if layers[i].name == ln:
+                return i
+        return None
+
+    def _append_pending(self, spec):
+        """spec：名稱字串（放最上面），或 {name, below|above: 圖層, position: "bottom"}。"""
+        if isinstance(spec, str):
+            spec = {'name': spec}
+        proj = self.proj
+        lay = Layer(spec['name'], Image.new('RGBA', (proj.width, proj.height), TRANSPARENT))
+        lay.pending = True
+        proj.layers.append(lay)
+        idx = len(proj.layers) - 1
+        if spec.get('position') == 'bottom':
+            proj.order.insert(0, idx)
+        elif spec.get('below') is not None or spec.get('above') is not None:
+            ref = proj.layer_index(spec.get('below') if spec.get('below') is not None else spec['above'])
+            pos = proj.order.index(ref) + (0 if spec.get('below') is not None else 1)
+            proj.order.insert(pos, idx)
+        else:
+            proj.order.append(idx)
+        return spec
+
+    def add_layer(self, op):
+        name = op.get('name')
+        if not name:
+            raise ToolError('add_layer 要給 name')
+        if any(l.name == name for l in self.proj.layers):
+            raise ToolError('已經有叫「%s」的圖層' % name)
+        if len(self.proj.layers) >= 8:
+            raise ToolError('圖層最多 8 層')
+        spec = {k: op[k] for k in ('name', 'below', 'above', 'position') if op.get(k) is not None}
+        self._append_pending(spec)
+        self.data.setdefault('newLayers', []).append(spec)
+
+    def set_layer_place(self, name, op):
+        """改提案中新圖層的位置。"""
+        specs = self.data.get('newLayers', [])
+        for k, sp in enumerate(specs):
+            sp = {'name': sp} if isinstance(sp, str) else sp
+            if sp['name'] == name:
+                new = {'name': name}
+                new.update({k2: op[k2] for k2 in ('below', 'above', 'position') if op.get(k2) is not None})
+                specs[k] = new
+                break
+        else:
+            raise ToolError('「%s」不是這個提案新增的圖層' % name)
+        idx = self.proj.layer_index(name)
+        self.proj.order.remove(idx)
+        if new.get('position') == 'bottom':
+            self.proj.order.insert(0, idx)
+        elif new.get('below') is not None or new.get('above') is not None:
+            ref = self.proj.layer_index(new.get('below') if new.get('below') is not None else new['above'])
+            self.proj.order.insert(self.proj.order.index(ref) + (0 if new.get('below') is not None else 1), idx)
+        else:
+            self.proj.order.append(idx)
 
     @staticmethod
     def create(proj, note='', author='agent'):
@@ -286,10 +367,14 @@ class Proposal(object):
     def save(self):
         self.data['updatedAt'] = int(time.time() * 1000)
         names = [l.name for l in self.proj.layers]
-        self.data['changes'] = [
-            {'l': li, 'ln': names[li] if li < len(names) else None, 'x': x, 'y': y,
-             'b': fmt_color(b), 'a': fmt_color(a)}
-            for (li, x, y), (b, a) in sorted(self.changes.items())]
+        changes = []
+        for (li, x, y), (b, a) in sorted(self.changes.items()):
+            ch = {'l': li, 'ln': names[li] if li < len(names) else None, 'x': x, 'y': y,
+                  'b': fmt_color(b), 'a': fmt_color(a)}
+            if li >= self.real_count:
+                ch['new'] = True
+            changes.append(ch)
+        self.data['changes'] = changes
         tmp = self.path + '.tmp'
         with open(tmp, 'w', encoding='utf-8') as f:
             json.dump(self.data, f, ensure_ascii=False, indent=1)
@@ -304,6 +389,8 @@ class Proposal(object):
             'id': self.id, 'status': self.data.get('status'), 'note': self.data.get('note', ''),
             'author': self.data.get('author'), 'baseVersion': self.data.get('baseVersion'),
             'pixels': len(self.changes),
+            'newLayers': self.data.get('newLayers', []),
+            'stackOrder': [self.proj.layers[i].name for i in self.proj.stack_order()],
             'layers': {('%d %s' % (li, names[li] if li < len(names) else '?')): n
                        for li, n in sorted(per_layer.items())},
             'cells': {'%d,%d' % k: n for k, n in sorted(self.changed_cells().items())},
@@ -483,18 +570,22 @@ def run_op(proj, imgs, op, default_layer):
             raise ToolError('來源和目標是同一層')
         if proj.layers[dst_li].locked:
             raise ToolError('圖層「%s」已鎖定' % proj.layers[dst_li].name)
-        x, y, w, h = ctx.area(op)
-        for yy in range(y, y + h):
-            for xx in range(x, x + w):
-                c = norm(img.getpixel((xx, yy)))
-                if c == TRANSPARENT:
-                    continue
-                imgs[dst_li].putpixel((xx, yy), c)
-                touched.add((dst_li, xx, yy))
-                put(xx, yy, TRANSPARENT)
+        if op.get('points'):
+            pts = [ctx.pt(q[0], q[1]) for q in op['points']]
+            pts = [q for q in pts if ctx.inside(*q)]
+        else:
+            x, y, w, h = ctx.area(op)
+            pts = [(xx, yy) for yy in range(y, y + h) for xx in range(x, x + w)]
+        for xx, yy in pts:
+            c = norm(img.getpixel((xx, yy)))
+            if c == TRANSPARENT:
+                continue
+            imgs[dst_li].putpixel((xx, yy), c)
+            touched.add((dst_li, xx, yy))
+            put(xx, yy, TRANSPARENT)
     else:
         raise ToolError('不認識的操作：%s（可用 set line rect fill replace clear grid flip shift '
-                        'copy move_to_layer revert）' % kind)
+                        'copy move_to_layer add_layer place_layer revert）' % kind)
     return touched
 
 
@@ -503,6 +594,16 @@ def apply_ops(prop, ops, default_layer):
     proj = prop.proj
     imgs = prop.layer_images()
     for i, op in enumerate(ops):
+        if op.get('op') in ('add_layer', 'place_layer'):
+            try:
+                if op['op'] == 'add_layer':
+                    prop.add_layer(op)
+                    imgs.append(proj.layers[-1].img.copy())
+                else:
+                    prop.set_layer_place(op.get('name'), op)
+            except ToolError as e:
+                raise ToolError('第 %d 個操作失敗：%s（之前的操作都沒存）' % (i + 1, e))
+            continue
         try:
             res = run_op(proj, imgs, op, default_layer)
         except ToolError as e:
@@ -595,7 +696,9 @@ def labeled(panel, rect, s, title, local_origin):
     out.alpha_composite(panel, (m, m + 18))
     d = ImageDraw.Draw(out)
     d.text((2, 1), title, fill=(0, 0, 0, 255), font=font(13))
-    step = 1 if s >= 16 else (2 if s >= 8 else (4 if s >= 4 else 8))
+    # 兩位數刻度在格子窄時會擠在一起，就隔一個標
+    wide = max(abs(x - local_origin[0]), abs(x + w - local_origin[0]), abs(y + h - local_origin[1])) >= 10
+    step = 1 if s >= (24 if wide else 14) else (2 if s >= 8 else (4 if s >= 4 else 8))
     for i in range(w):
         v = x + i - local_origin[0]
         if v % step == 0:
@@ -827,6 +930,8 @@ def cmd_accept(a):
     if a.cells:
         cells = {parse_pair(c, '--cells') for c in a.cells.split(';') if c}
     take, conflicts = [], []
+    if prop.lost:
+        print('注意：%d 個像素的圖層已經找不到，略過' % prop.lost, file=sys.stderr)
     for key, (b, aft) in prop.changes.items():
         li, x, y = key
         if cells is not None and cell_of(p, x, y) not in cells:
@@ -843,7 +948,19 @@ def cmd_accept(a):
     snap = snapshot(p, 'before-' + prop.id)
     for (li, x, y), aft in take:
         p.layers[li].img.putpixel((x, y), aft)
+    for lay in p.layers:
+        lay.pending = False
+    prop.data['newLayers'] = []
+    order = p.stack_order()
     p.save()
+    # 存檔時圖層照疊圖順序重排了，剩下的改動也要換成新編號
+    remap = {old: new for new, old in enumerate(order)}
+    prop.changes = {(remap[k[0]], k[1], k[2]): v for k, v in prop.changes.items()}
+    take = [((remap[k[0]], k[1], k[2]), v) for k, v in take]
+    conflicts = [(remap.get(k[0], k[0]), k[1], k[2]) for k in conflicts]
+    p.layers = [p.layers[i] for i in order]
+    p.order = None
+    prop.real_count = len(p.layers)
     for key, _aft in take:
         del prop.changes[key]
     for key in conflicts:

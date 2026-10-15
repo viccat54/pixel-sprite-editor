@@ -51,8 +51,10 @@ python3 $T accept $P $ID [--cells "2,0;3,0"]
 | `flip` | 範圍、`axis:"h"\|"v"` | 範圍內左右／上下翻轉 |
 | `shift` | 範圍、`dx,dy` | 範圍內的不透明像素平移 |
 | `copy` | 範圍、`to:[x,y]` 或 `to:{"cell":[c,r]}`、`from_layer`、`mode:"replace"\|"over"` | 複製，`over` 不覆蓋透明 |
-| `move_to_layer` | 範圍、`to` | 不透明像素搬到別層（蓋掉目標、清掉來源） |
+| `move_to_layer` | 範圍或 `points:[[x,y],…]`、`to` | 不透明像素搬到別層（蓋掉目標、清掉來源） |
 | `revert` | 範圍 | 把提案在這範圍的改動撤掉 |
+| `add_layer` | `name`、`below`／`above`（圖層）或 `position:"bottom"` | 新增空白圖層（預設放最上面），之後的操作就能用這個名稱。accept 時才真的建立 |
+| `place_layer` | `name`、`below`／`above`／`position` | 改這個提案新增圖層的位置 |
 
 範圍：`x,y,w,h`；有 `cell` 而沒寫 `w,h` 就是整格。
 顏色：`#rgb`、`#rrggbb`、`#rrggbbaa`、`transparent`。
