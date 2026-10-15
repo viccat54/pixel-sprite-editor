@@ -9,6 +9,10 @@
 - **自動儲存與離線可用**：專案直接儲存在瀏覽器 IndexedDB，支援匯出／匯入 `.pixelfixer.json` 與透過 iOS 分享表直接將 PNG 存入 iCloud 雲碟。
 - **零外部相依**：單一 `index.html`，無建置步驟、無外部網路請求、無追蹤。
 
+## 給 AI agent 用
+
+`tools/pixelfixer.py`（Python＋Pillow）可以讓 Claude、Codex 等 agent 讀取、預覽、繪製 `.pixelfixer.json` 專案。agent 只能送「提案」，使用者確認後才寫回。用法見 [AGENT.md](AGENT.md)。
+
 ## 授權
 
 MIT License © viccat54

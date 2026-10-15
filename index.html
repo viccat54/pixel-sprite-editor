@@ -4816,7 +4816,8 @@ input[type="file"] {
 
   // --- 匯出與匯入 ---
   function sanitizeFileName(name) {
-    const clean = (name || 'sprite').replace(/[^a-zA-Z0-9_.-]/g, '_').slice(0, 80);
+    // 只換掉檔名不能用的字元，中文名稱保留
+    const clean = (name || 'sprite').replace(/[\\/:*?"<>|\u0000-\u001f]/g, '_').trim().slice(0, 80);
     return clean || 'sprite';
   }
 
@@ -4894,6 +4895,7 @@ input[type="file"] {
     }
     await saveCurrentProjectNow(true);
     const payload = {
+      id: state.projId,
       name: state.projName,
       cell: state.cellSize,
       recents: state.recents,
@@ -4928,7 +4930,13 @@ input[type="file"] {
         loadImageFromSource(data.baseDataUrl)
       ]);
 
-      state.projId = 'proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+      // 同一個專案匯出再匯入（例如 agent 改過後）就更新原本那份，不另開新專案
+      const sameId = typeof data.id === 'string' && /^proj_[\w]+$/.test(data.id) ? data.id : null;
+      let existed = false;
+      if (sameId) {
+        try { existed = !!(await dbGetProject(sameId)); } catch (e2) {}
+      }
+      state.projId = sameId || ('proj_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6));
       state.projName = data.name || '匯入專案';
       state.cellSize = Math.max(4, Math.min(512, Number(data.cell) || 32));
       state.hiCanvas = hiCv;
@@ -4953,7 +4961,7 @@ input[type="file"] {
       updateUIState();
       await saveCurrentProjectNow(false);
       closeMenu();
-      showToast('已匯入專案');
+      showToast(existed ? `已用匯入檔更新「${state.projName}」` : '已匯入專案');
     } catch (err) {
       showToast('匯入失敗：檔案格式不正確');
     }
